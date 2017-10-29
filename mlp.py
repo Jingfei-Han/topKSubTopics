@@ -1,7 +1,8 @@
 from keras.models import Sequential
 from keras.models import load_model
 from keras.layers.core import Dense, Activation
-from keras.optimizers import SGD
+from keras.optimizers import SGD, RMSprop
+from keras.utils import np_utils
 import keras
 import numpy as np
 import os
@@ -20,8 +21,9 @@ class MLP(object):
         self.nb_input = nb_input
         self.input_dim = self.nb_input * self.emb
         self.output_dim = 1
+        self.nb_class = 1
 
-        self.batch_size = 64
+        self.batch_size = 128
 
         self.filename = filename
         self.isReadModel = isReadModel
@@ -30,15 +32,16 @@ class MLP(object):
 
     def build_model(self):
         self.model.add(Dense(output_dim=30, input_shape=(self.input_dim, )))
-        self.model.add(Activation("linear"))
+        self.model.add(Activation("relu"))
         self.model.add(Dense(output_dim=30))
-        self.model.add(Activation("linear"))
+        self.model.add(Activation("relu"))
         self.model.add(Dense(output_dim=self.output_dim))
         self.model.add(Activation("sigmoid"))
 
         self.model.summary()
 
-        self.model.compile(loss='mean_squared_error', optimizer=SGD(), metrics=[keras.metrics.mse, keras.metrics.mae])
+        #self.model.compile(loss='binary_crossentropy', optimizer=SGD(), metrics=['accuracy', 'precision', 'recall', 'fmeasure'])
+        self.model.compile(loss='mse', optimizer=SGD(), metrics=['accuracy'])
 
     def fit(self, train_X, train_y, test_X, test_y, epoch=20):
         self.model.fit(train_X, train_y, validation_data=(test_X, test_y),
@@ -61,7 +64,18 @@ class MLP(object):
                 print("read model finished.")
             else:
                 print("start to train model...")
-                train_X, train_y, test_X, test_y = generate_data(alpha = 0.7)
+                print("Read data...")
+                train_X, train_y, test_X, test_y = load_dataset()
+                print("Read finished.")
+                if train_X is None:
+                    print("Regenerate data...")
+                    train_X, train_y, test_X, test_y = generate_data(alpha = 0.7)
+                    print("Regenerate finished.")
+
+                #train_y = np_utils.to_categorical(train_y, self.nb_class)
+                #test_y = np_utils.to_categorical(test_y, self.nb_class)
+                #train_y = train_y.reshape(-1,)
+                #test_y = test_y.reshape(-1,)
                 self.build_model()
                 if os.path.exists(self.filename):
                     print("pre-train model using file...")
@@ -124,10 +138,41 @@ class MLP(object):
     def load_model(self, ):
         self.model = load_model(filename)
     """
+
+def load_dataset():
+    if os.path.exists("dataset_train1.pkl"):
+        with open("dataset_train1.pkl", "rb") as f:
+            train_X1, train_y1 = pickle.load(f)
+
+    if os.path.exists("dataset_train2.pkl"):
+        with open("dataset_train2.pkl", "rb") as f:
+            train_X2, train_y2 = pickle.load(f)
+
+    if os.path.exists("dataset_train3.pkl"):
+        with open("dataset_train3.pkl", "rb") as f:
+            train_X3, train_y3 = pickle.load(f)
+
+    if os.path.exists("dataset_test.pkl"):
+        with open("dataset_test.pkl", "rb") as f:
+            test_X, test_y = pickle.load(f)
+
+    train_X = np.concatenate((train_X1, train_X2, train_X3), axis=0)
+    train_y = np.concatenate((train_y1, train_y2, train_y3), axis=0)
+    try:
+        assert train_X.shape[1] == 600
+        assert test_X.shape[1] == 600
+
+        return train_X, train_y, test_X, test_y
+    except:
+        return None, None, None, None
+
+
 def generate_data(alpha = 0.9):
     print("---------------------------------------")
     print("start to generate data...")
     cnt = 0
+    cnt_pos = 0
+    cnt_neg = 0
     contextList = ["physic", "math", "chemistry", "biology", "engineering", "biochemistry", "geography",
                    "linguistics", "philosophy", "computer_science"]
     #contextList = ["physic", "math", "chemistry", "computer_science"]
@@ -153,6 +198,7 @@ def generate_data(alpha = 0.9):
                     y.append(1)
                     y_name.append(k + " : " + i + " : " + context)
 
+                    cnt_pos += 1
                     cnt += 1
                 else:
                     #negative
@@ -162,6 +208,7 @@ def generate_data(alpha = 0.9):
                     y.append(0)
                     y_name.append(k + " : " + i + " : " + context)
 
+                    cnt_neg += 1
                     cnt += 1
 
     cnt = len(y)
@@ -183,6 +230,8 @@ def generate_data(alpha = 0.9):
     print("Sample count: ", cnt)
     print("Train size: ", trainSize)
     print("Test size: ", cnt - trainSize)
+    print("Positive count: ", cnt_pos)
+    print("Negative count: ", cnt_neg)
     print("---------------------------------------")
     rm = np.random.permutation(cnt)
     train_X = data[rm[:trainSize], :]
@@ -199,25 +248,46 @@ def generate_data(alpha = 0.9):
 
     dic = defaultdict(dict)
     for i,j in zip(train_y_name, train_y):
-        dic["train_set"][i] = j
+        dic["train_set"][i[0]] = str(j[0])
     for i,j in zip(test_y_name, test_y):
-        dic["test_set"][i] = j
-
+        dic["test_set"][i[0]] = str(j[0])
     #return emb_context, emb_A, emb_B, y
     print("Data generation is finished!")
     print("---------------------------------------")
 
-
+    print("Store data...")
+    #with codecs.open("dataset.json", "w", "utf8") as f:
+    #    json.dump(dic, f, indent = 4)
+    print("---------------------------------------")
     #generate pickle file
-    with open("dataset.pkl", "wb") as f1:
-        pickle.dump((train_X, train_y, test_X, test_y), f1, True)
-    with codecs.open("dataset.json", "w", "utf8") as f:
-        json.dump(dic, f, indent = 4)
+    with open("dataset_test.pkl", "wb") as f1:
+        pickle.dump((test_X,test_y), f1, True)
+    print("Store data fininshed.")
+    print("---------------------------------------")
 
-    return train_X, train_y, test_X, test_y
+    p1 = int(len(train_y)/3)
+    p2 = 2*p1
+    with open("dataset_train1.pkl", "wb") as f1:
+        pickle.dump((train_X[:p1], train_y[:p1]), f1, True)
+    print("---------------------------------------")
+
+    with open("dataset_train2.pkl", "wb") as f1:
+        pickle.dump((train_X[p1:p2], train_y[p1:p2]), f1, True)
+    print("---------------------------------------")
+
+    with open("dataset_train3.pkl", "wb") as f1:
+        pickle.dump((train_X[p2:], train_y[p2:]), f1, True)
+    print("---------------------------------------")
+
+    with open("dataset.json", "w") as f1:
+        json.dump(dic, f1, True)
+    print("---------------------------------------")
+
+    #return train_X, train_y, test_X, test_y
+    return dic
 
 
 if __name__ == "__main__":
-    generate_data(alpha=0.8)
-    #model = MLP()
-    #model.train_model(epoch=2000)
+    #dic = generate_data(alpha=0.75)
+    model = MLP()
+    model.train_model(epoch=20)
