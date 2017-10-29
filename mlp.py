@@ -6,6 +6,9 @@ import keras
 import numpy as np
 import os
 import pickle
+import codecs
+from collections import defaultdict
+import json
 
 from globalVar import w2v_model, taxonomy
 
@@ -125,54 +128,41 @@ def generate_data(alpha = 0.9):
     print("---------------------------------------")
     print("start to generate data...")
     cnt = 0
-    maxCnt = 1000000 # max count
-    #context = "computer_science"
-    #contextList = ["physic", "math", "chemistry", "biology", "engineering", "biochemistry", "geography",
-    #               "linguistics", "philosophy", "computer_science"]
-    contextList = ["physic", "math", "chemistry", "computer_science"]
-    #contextList = ["computer_science"]
+    contextList = ["physic", "math", "chemistry", "biology", "engineering", "biochemistry", "geography",
+                   "linguistics", "philosophy", "computer_science"]
+    #contextList = ["physic", "math", "chemistry", "computer_science"]
     #emb_context = w2v_model[context]
-    # emb_A: parent, emb_B: children, emb_context: context
     emb_A = []
     emb_B = []
     emb_context = []
     y = []
     y_name = []
-    emb_A_cs = [] #computer_science
-    emb_B_cs = []
-    emb_context_cs = []
-    y_cs = []
-    y_name_cs = []
     for (i, j) in taxonomy.items():
         for k in j['subcats']:
             for context in contextList:
                 try:
                     tmp_score = w2v_model.n_similarity([k], [i, context])
-                    #if i == "machine_learning":
-                        #print(i, k, context, tmp_score)
                 except:
                     continue
-                if tmp_score > 0.3:
-                    if context == "computer_science":
-                        emb_A_cs.append(w2v_model[i])
-                        emb_B_cs.append(w2v_model[k])
-                        emb_context_cs.append(w2v_model[context])
-                        y_cs.append(tmp_score)
-                        y_name_cs.append(k + " : " + i + " : " + context)
-                    else:
-                        emb_A.append(w2v_model[i])
-                        emb_B.append(w2v_model[k])
-                        emb_context.append(w2v_model[context])
-                        y.append(tmp_score)
-                        y_name.append(k + " : " + i + " : " + context)
+                if tmp_score > 0.6:
+                    # threshold is 0.6
+                    # positive
+                    emb_A.append(w2v_model[i])
+                    emb_B.append(w2v_model[k])
+                    emb_context.append(w2v_model[context])
+                    y.append(1)
+                    y_name.append(k + " : " + i + " : " + context)
 
                     cnt += 1
-                if cnt > maxCnt:
-                    break
-            if cnt > maxCnt:
-                break
-        if cnt > maxCnt:
-            break
+                else:
+                    #negative
+                    emb_A.append(w2v_model[i])
+                    emb_B.append(w2v_model[k])
+                    emb_context.append(w2v_model[context])
+                    y.append(0)
+                    y_name.append(k + " : " + i + " : " + context)
+
+                    cnt += 1
 
     cnt = len(y)
     embSize = len(emb_context[0])
@@ -182,59 +172,52 @@ def generate_data(alpha = 0.9):
     y = np.asarray(y).reshape(-1, 1)
     # emb_context, emb_A, emb_B's dim = cnt * embSize = cnt * 200
 
-    cnt_cs = len(y_cs)
-    emb_context_cs = np.asarray(emb_context_cs)
-    emb_A_cs = np.asarray(emb_A_cs)
-    emb_B_cs = np.asarray(emb_B_cs)
-    y_cs = np.asarray(y_cs).reshape(-1, 1)
-
     y_name = np.asarray(y_name).reshape(-1, 1)
-    y_name_cs = np.asarray(y_name_cs).reshape(-1, 1)
 
     data = np.concatenate((emb_B, emb_A, emb_context), axis=1)
-    data_cs = np.concatenate((emb_B_cs, emb_A_cs, emb_context_cs), axis=1)
     assert data.shape[1] == 3 * embSize
-    assert data_cs.shape[1] == 3 * embSize
     #shuffle and divide data into train and test set
 
-    #trainSize = int(alpha * cnt)
-    trainSize = cnt
+    trainSize = int(alpha * cnt)
 
-    print("Sample count: ", cnt+cnt_cs)
+    print("Sample count: ", cnt)
     print("Train size: ", trainSize)
-    print("Test size: ", cnt_cs)
+    print("Test size: ", cnt - trainSize)
     print("---------------------------------------")
     rm = np.random.permutation(cnt)
-    rm_test = np.random.permutation(cnt_cs)
-    """
     train_X = data[rm[:trainSize], :]
     train_y = y[rm[:trainSize], :]
     test_X = data[rm[trainSize:], :]
     test_y = y[rm[trainSize:], :]
-    """
-    train_X = data[rm, :]
-    train_y = y[rm, :]
-    test_X = data_cs[rm_test, :]
-    test_y = y_cs[rm_test, :]
 
-    train_y_name = y_name[rm, :]
-    test_y_name = y_name_cs[rm_test, :]
+    train_y_name = y_name[rm[:trainSize], :]
+    test_y_name = y_name[rm[trainSize:], :]
 
     print("train sample case study:")
     print(train_y_name[:5], train_y[:5])
     print(test_y_name[:5], test_y[:5])
+
+    dic = defaultdict(dict)
+    for i,j in zip(train_y_name, train_y):
+        dic["train_set"][i] = j
+    for i,j in zip(test_y_name, test_y):
+        dic["test_set"][i] = j
+
     #return emb_context, emb_A, emb_B, y
     print("Data generation is finished!")
     print("---------------------------------------")
 
+
     #generate pickle file
     with open("dataset.pkl", "wb") as f1:
         pickle.dump((train_X, train_y, test_X, test_y), f1, True)
-
+    with codecs.open("dataset.json", "w", "utf8") as f:
+        json.dump(dic, f, indent = 4)
 
     return train_X, train_y, test_X, test_y
 
 
 if __name__ == "__main__":
-    model = MLP()
-    model.train_model(epoch=2000)
+    generate_data(alpha=0.8)
+    #model = MLP()
+    #model.train_model(epoch=2000)
