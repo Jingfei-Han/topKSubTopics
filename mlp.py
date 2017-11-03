@@ -1,20 +1,16 @@
 from keras.models import Sequential
-from keras.models import load_model
 from keras.layers.core import Dense, Activation
 from keras.optimizers import SGD, RMSprop
-from keras.utils import np_utils
-import keras
 import numpy as np
 import os
 import pickle
-import codecs
 from collections import defaultdict
 import json
 
-from globalVar import w2v_model, taxonomy
+from globalVar import w2v_model, taxonomy, mlp_model
 
 class MLP(object):
-    def __init__(self, emb = 200, nb_input=3, filename="mlp_model.h5", isReadModel=False, isRun=False):
+    def __init__(self, emb = 200, nb_input=3, isReadModel=False, isRun=False):
         self.model = Sequential()
         #self.train_X, self.train_y, self.test_X, self.test_y = [], [], [], []
         self.emb = emb
@@ -25,10 +21,8 @@ class MLP(object):
 
         self.batch_size = 128
 
-        self.filename = filename
         self.isReadModel = isReadModel
         self.isRun = isRun
-
 
     def build_model(self):
         self.model.add(Dense(output_dim=30, input_shape=(self.input_dim, )))
@@ -57,9 +51,10 @@ class MLP(object):
 
     def train_model(self, emb=200, epoch=20):
         if not self.isRun:
-            if self.isReadModel and os.path.exists(self.filename):
+            # if isRun = False, it represents that the program is not run, but debug
+            if self.isReadModel and (mlp_model is not None):
+                #Read the model
                 print("read model...")
-                mlp_model = load_model(self.filename)
                 self.model = mlp_model
                 print("read model finished.")
             else:
@@ -67,19 +62,16 @@ class MLP(object):
                 print("Read data...")
                 train_X, train_y, test_X, test_y = load_dataset()
                 print("Read finished.")
+                #if read defeat, we need to regenerate data
                 if train_X is None:
                     print("Regenerate data...")
                     train_X, train_y, test_X, test_y = generate_data(alpha = 0.7)
                     print("Regenerate finished.")
 
-                #train_y = np_utils.to_categorical(train_y, self.nb_class)
-                #test_y = np_utils.to_categorical(test_y, self.nb_class)
-                #train_y = train_y.reshape(-1,)
-                #test_y = test_y.reshape(-1,)
                 self.build_model()
-                if os.path.exists(self.filename):
+                if mlp_model is not None:
                     print("pre-train model using file...")
-                    self.model = load_model(self.filename)
+                    self.model = mlp_model
                 self.fit(train_X, train_y, test_X, test_y, epoch=epoch)
                 loss_and_metrics = self.eval(test_X, test_y)
                 print("loss and metrics is: ", loss_and_metrics)
@@ -87,7 +79,7 @@ class MLP(object):
 
                 self.save_model() #save model when training finished.
         else:
-            self.model = load_model(self.filename)
+            self.model = mlp_model
 
     def test_model(self, parent, children, context):
         try:
@@ -114,6 +106,9 @@ class MLP(object):
 
         cnt = len(resList)
         assert len(emb_B) == cnt
+        if cnt == 0:
+            # no children
+            return {}
 
         emb_context = np.repeat(emb_context.reshape(1, -1), cnt, axis=0)
         emb_A = np.repeat(emb_A.reshape(1, -1), cnt, axis=0)
@@ -132,12 +127,8 @@ class MLP(object):
 
     def save_model(self):
         print("save model...")
-        self.model.save(self.filename)
+        self.model.save("mlp_model.h5")
         print("The model was saved.")
-    """
-    def load_model(self, ):
-        self.model = load_model(filename)
-    """
 
 def load_dataset():
     if os.path.exists("dataset_train1.pkl"):
@@ -279,6 +270,7 @@ def generate_data(alpha = 0.9):
         pickle.dump((train_X[p2:], train_y[p2:]), f1, True)
     print("---------------------------------------")
 
+    print("store json file...")
     with open("dataset.json", "w") as f1:
         json.dump(dic, f1, True)
     print("---------------------------------------")
@@ -288,6 +280,6 @@ def generate_data(alpha = 0.9):
 
 
 if __name__ == "__main__":
-    #dic = generate_data(alpha=0.75)
-    model = MLP()
-    model.train_model(epoch=20)
+    dic = generate_data(alpha=0.75)
+    #model = MLP()
+    #model.train_model(epoch=20)

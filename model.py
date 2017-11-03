@@ -1,8 +1,22 @@
 from globalVar import w2v_model
 import logging
 import mlp
-from keras.models import load_model
+
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO)
+
+"""
+input: candidateWeight, candidateSet, k, context
+    candidateWeight: [float, float, ...] , n = the number of layers
+    candidateSet: [set, set, ...], n = the number of layers
+    k: int
+    context: str
+output: ranked_scores
+    ranked_scores = [["A", 0.9], ["B", 0.84], ["C", 0.7], ...] 
+    
+    before sort operation:
+        scores = {"A":0.9, "B":0.8, "C":0.7}
+
+"""
 
 def originMethod(candidateWeight, candidateSet, k, context):
     candidateSet = [list(i) for i in candidateSet] # change set to list
@@ -26,8 +40,7 @@ def originMethod(candidateWeight, candidateSet, k, context):
     return ranked_scores
 
 def mlpMethod(candidateSet, k):
-    filename = "mlp_model.h5"
-    mlp_model = mlp.MLP(filename = filename, isReadModel=False, isRun=True)
+    mlp_model = mlp.MLP(isReadModel=True, isRun=True)
     mlp_model.train_model(emb=200, epoch=20)
     candidateSet = [list(i) for i in candidateSet]
     area = candidateSet[0][0]
