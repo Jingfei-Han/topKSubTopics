@@ -131,20 +131,20 @@ class MLP(object):
         print("The model was saved.")
 
 def load_dataset():
-    if os.path.exists("dataset_train1.pkl"):
-        with open("dataset_train1.pkl", "rb") as f:
+    if os.path.exists("data/dataset_train1.pkl"):
+        with open("data/dataset_train1.pkl", "rb") as f:
             train_X1, train_y1 = pickle.load(f)
 
-    if os.path.exists("dataset_train2.pkl"):
-        with open("dataset_train2.pkl", "rb") as f:
+    if os.path.exists("data/dataset_train2.pkl"):
+        with open("data/dataset_train2.pkl", "rb") as f:
             train_X2, train_y2 = pickle.load(f)
 
-    if os.path.exists("dataset_train3.pkl"):
-        with open("dataset_train3.pkl", "rb") as f:
+    if os.path.exists("data/dataset_train3.pkl"):
+        with open("data/dataset_train3.pkl", "rb") as f:
             train_X3, train_y3 = pickle.load(f)
 
-    if os.path.exists("dataset_test.pkl"):
-        with open("dataset_test.pkl", "rb") as f:
+    if os.path.exists("data/dataset_test.pkl"):
+        with open("data/dataset_test.pkl", "rb") as f:
             test_X, test_y = pickle.load(f)
 
     train_X = np.concatenate((train_X1, train_X2, train_X3), axis=0)
@@ -251,27 +251,27 @@ def generate_data(alpha = 0.9):
     #    json.dump(dic, f, indent = 4)
     print("---------------------------------------")
     #generate pickle file
-    with open("dataset_test.pkl", "wb") as f1:
+    with open("data/dataset_test.pkl", "wb") as f1:
         pickle.dump((test_X,test_y), f1, True)
     print("Store data fininshed.")
     print("---------------------------------------")
 
     p1 = int(len(train_y)/3)
     p2 = 2*p1
-    with open("dataset_train1.pkl", "wb") as f1:
+    with open("data/dataset_train1.pkl", "wb") as f1:
         pickle.dump((train_X[:p1], train_y[:p1]), f1, True)
     print("---------------------------------------")
 
-    with open("dataset_train2.pkl", "wb") as f1:
+    with open("data/dataset_train2.pkl", "wb") as f1:
         pickle.dump((train_X[p1:p2], train_y[p1:p2]), f1, True)
     print("---------------------------------------")
 
-    with open("dataset_train3.pkl", "wb") as f1:
+    with open("data/dataset_train3.pkl", "wb") as f1:
         pickle.dump((train_X[p2:], train_y[p2:]), f1, True)
     print("---------------------------------------")
 
     print("store json file...")
-    with open("dataset.json", "w") as f1:
+    with open("data/dataset.json", "w") as f1:
         json.dump(dic, f1, True)
     print("---------------------------------------")
 

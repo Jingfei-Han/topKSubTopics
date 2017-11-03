@@ -34,7 +34,7 @@ def get_subcats(area, data):
     dic = defaultdict(set)
     for i in data.keys():
         if i == area:
-            subcats.append(data[i])
+            subcats.append(set(data[i]))
     return subcats
 
 #subcats_not_more_than_depth
@@ -53,6 +53,7 @@ def mergeTwoSet(subcat1, subcat2):
         else:
             # add subcat2
             subcats.append(subcat2[i])
+    return subcats
 
 def getCandidateSet(area, compute_mode, depth):
     # the number of the mode: 4
@@ -66,6 +67,7 @@ def getCandidateSet(area, compute_mode, depth):
 
         subcats = mergeTwoSet(subcat1, subcat3)
         subcats = mergeTwoSet(subcats, subcat2)
+        #subcats = mergeTwoSet(subcat1, subcat2)
 
         candidateSet = subcats
     elif compute_mode == 1:

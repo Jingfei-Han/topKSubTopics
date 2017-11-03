@@ -1,8 +1,6 @@
 import logging
 from gensim.models import Word2Vec
 import pickle
-import codecs
-from utils import  normalize_name_for_space_name
 
 import os
 from keras.models import load_model
@@ -25,7 +23,7 @@ def load_taxonomy(taxonomy_infile):
     logging.info('taxonomy loaded.')
     return taxonomy
 
-def get_data_from_pickle(filename)
+def get_data_from_pickle(filename):
     with open(filename, "rb") as f:
         fos = pickle.load(f)
     return fos
@@ -38,9 +36,10 @@ mlp_model = None
 
 taxonomy_infile = "/dev/shm/a/wiki_taxonomy_lemmatized.pkl"
 vector_model_infile = "/dev/shm/a/wiki_text_20161201_1to4_200d.model"
-mag_infile = "dev/shm/a/mag2.pkl"
-ccs_infile = "dev/shm/a/acm_ccs.pkl"
-mlp_infile = "mlp_model.h5"
+mag_infile = "/dev/shm/a/mag2.pkl"
+ccs_infile = "/dev/shm/a/acm_ccs.pkl"
+
+mlp_infile = "data/mlp_model.h5"
 
 taxonomy = load_taxonomy(taxonomy_infile)
 w2v_model = load_vector_model(vector_model_infile)
