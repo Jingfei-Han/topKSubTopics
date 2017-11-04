@@ -127,7 +127,7 @@ class MLP(object):
 
     def save_model(self):
         print("save model...")
-        self.model.save("mlp_model.h5")
+        self.model.save("data/mlp_model.h5")
         print("The model was saved.")
 
 def load_dataset():
@@ -147,9 +147,9 @@ def load_dataset():
         with open("data/dataset_test.pkl", "rb") as f:
             test_X, test_y = pickle.load(f)
 
-    train_X = np.concatenate((train_X1, train_X2, train_X3), axis=0)
-    train_y = np.concatenate((train_y1, train_y2, train_y3), axis=0)
     try:
+        train_X = np.concatenate((train_X1, train_X2, train_X3), axis=0)
+        train_y = np.concatenate((train_y1, train_y2, train_y3), axis=0)
         assert train_X.shape[1] == 600
         assert test_X.shape[1] == 600
 
@@ -276,10 +276,10 @@ def generate_data(alpha = 0.9):
     print("---------------------------------------")
 
     #return train_X, train_y, test_X, test_y
-    return dic
+    return train_X, train_y, test_X, test_y
 
 
 if __name__ == "__main__":
-    dic = generate_data(alpha=0.75)
-    #model = MLP()
-    #model.train_model(epoch=20)
+    #train_X, train_y, test_X, test_y = generate_data(alpha=0.75)
+    model = MLP()
+    model.train_model(epoch=20)
