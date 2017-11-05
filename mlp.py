@@ -65,7 +65,7 @@ class MLP(object):
                 #if read defeat, we need to regenerate data
                 if train_X is None:
                     print("Regenerate data...")
-                    train_X, train_y, test_X, test_y = generate_data(alpha = 0.7)
+                    train_X, train_y, test_X, test_y = generate_data(alpha = 0.9)
                     print("Regenerate finished.")
 
                 self.build_model()
@@ -158,8 +158,9 @@ def load_dataset():
         return None, None, None, None
 
 
-def generate_data(alpha = 0.9):
+def generate_data(alpha = 0.75):
     print("---------------------------------------")
+    print("alpha=", alpha)
     print("start to generate data...")
     cnt = 0
     cnt_pos = 0
@@ -282,4 +283,4 @@ def generate_data(alpha = 0.9):
 if __name__ == "__main__":
     #train_X, train_y, test_X, test_y = generate_data(alpha=0.75)
     model = MLP()
-    model.train_model(epoch=20)
+    model.train_model(epoch=200)
