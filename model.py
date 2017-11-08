@@ -32,7 +32,8 @@ def originMethod(candidateWeight, candidateSet, k, context):
                     try:
                         tmp_score += w2v_model.n_similarity([c], [c2, context]) * candidateWeight[d]
                     except Exception as e:
-                        logging.info(e)
+                        #logging.info(e)
+                        pass
             scores[c] = tmp_score
     ranked_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     #print(ranked_scores)

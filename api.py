@@ -18,6 +18,7 @@ def topics():
     weighting_mode = request.args.get("weighting_mode", 0, int) #0 is simple version
     compute_mode = request.args.get("compute_mode", 0, int)
     method = request.args.get("method", "origin")
+    confidence = request.args.get("confidence", 0.0, float)
 
     # preprocess
     area_name = area_name.strip()
@@ -29,7 +30,7 @@ def topics():
 
 
     # get class instance
-    topK_subAreas = TopKSubAreas(area = area_name, context = context, k = k,
+    topK_subAreas = TopKSubAreas(area = area_name, context = context, k = k, threshold = confidence,
                                  weighting_mode = weighting_mode, compute_mode = compute_mode,
                                  method=method)
     ranked_scores = topK_subAreas.getResult()

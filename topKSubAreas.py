@@ -4,10 +4,11 @@ from utils import getCandidateSet
 
 class TopKSubAreas(object):
     def __init__(self, area="machine_learning", context="computer_science",
-                 k=15, weighting_mode=0, compute_mode=0, method="origin"):
+                 k=15, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin"):
         self.area = area
         self.context = context
         self.k = k
+        self.threshold = threshold
         self.weighting_mode = weighting_mode
         self.compute_mode = compute_mode
 
@@ -17,6 +18,13 @@ class TopKSubAreas(object):
         self.rankResult = None
 
         self.method = method
+
+    def set_k(self, k):
+        self.k = k
+    def set_area(self, area):
+        self.area = area
+    def set_context(self, context):
+        self.context = context
 
     def _weight_for_depth(self, d):
         # compute the d-th layer's weight
@@ -49,14 +57,20 @@ class TopKSubAreas(object):
         return ranked_scores
 
     def _getTopK(self):
+        self.rankResult = []
         self._getCandidate()
         if self.method == "origin":
-            self.rankResult = self._originMethod()
+            rank = self._originMethod()
         elif self.method == "mlp":
-            self.rankResult = self._mlp()
+            rank = self._mlp()
         else:
-            self.randResult = []
-            pass
+            rank = []
+
+        for oneItem in rank:
+            if oneItem[1] >= self.threshold:
+                self.rankResult.append(oneItem)
+            else:
+                break
 
     def getResult(self):
         self._getTopK()
