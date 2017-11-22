@@ -2,6 +2,7 @@ from nltk.stem import WordNetLemmatizer
 lemmatize = WordNetLemmatizer().lemmatize
 from globalVar import taxonomy, mag, ccs
 from collections import defaultdict
+import os
 
 def normalize_name_for_space_name(name):
     # e.g.: "machine learning algorithms" --> "machine_learning_agorithm"
@@ -80,3 +81,21 @@ def getCandidateSet(area, compute_mode, depth):
         candidateSet = get_subcats(area, ccs)
 
     return candidateSet
+
+def getCandidateMap(candidate):
+    assert type(candidate) == list
+    topic2index = {}
+    index2topic = {}
+    for i, j in enumerate(candidate):
+        topic2index[j] = i+1
+        index2topic[i+1] = j
+    tmp = i+1
+    topic2index["EOS"] = tmp+1
+    index2topic[tmp+1] = "EOS"
+    return topic2index, index2topic
+
+def make_dir(path):
+    try:
+        os.mkdir(path)
+    except OSError:
+        pass
