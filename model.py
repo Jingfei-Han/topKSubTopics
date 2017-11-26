@@ -1,6 +1,8 @@
 from globalVar import w2v_model
 import logging
 import mlp
+import rnn
+from globalVar import rnn_model
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO)
 
@@ -59,4 +61,14 @@ def mlpMethod(candidateSet, k):
     #print(ranked_scores)
     ranked_scores = ranked_scores[:k]
     return ranked_scores
+
+def rnnMethod(area):
+    global rnn_model
+    if rnn_model is None:
+        rnn_model = rnn.RNN()
+
+    ranked_scores = rnn_model.train(False, area)
+    ranked_scores = ranked_scores[1:] #delete the first element
+    return ranked_scores
+
 

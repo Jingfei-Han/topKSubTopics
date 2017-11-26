@@ -43,7 +43,7 @@ def topics():
     # return
 
 def main():
-    app.run(host="0.0.0.0", port=5099)
+    app.run(host="0.0.0.0", port=5097)
 
 if __name__ == '__main__':
     start_t = time.time()

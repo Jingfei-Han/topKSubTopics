@@ -4,11 +4,13 @@ import pickle
 
 import os
 from keras.models import load_model
+import rnn
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO)
 
 global taxonomy, w2v_model, mag, ccs
 global mlp_model
+global rnn_model
 
 def load_vector_model(vector_model):
     logging.info('loading vector model from {}...'.format(vector_model))
@@ -33,6 +35,7 @@ taxonomy = None
 w2v_model = None
 mag = None
 mlp_model = None
+rnn_model = None
 
 taxonomy_infile = "/dev/shm/a/wiki_taxonomy_lemmatized.pkl"
 vector_model_infile = "/dev/shm/a/wiki_text_20161201_1to4_200d.model"
@@ -48,3 +51,5 @@ ccs = get_data_from_pickle(ccs_infile)
 
 if os.path.exists(mlp_infile):
     mlp_model = load_model(mlp_infile)
+
+rnn_model = rnn.RNN()

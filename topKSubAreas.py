@@ -1,4 +1,4 @@
-from model import originMethod, mlpMethod
+from model import originMethod, mlpMethod, rnnMethod
 import math
 from utils import getCandidateSet
 
@@ -56,6 +56,10 @@ class TopKSubAreas(object):
         ranked_scores = mlpMethod(self.candidateSet, self.k)
         return ranked_scores
 
+    def _rnn(self):
+        ranked_score = rnnMethod(self.area)
+        return ranked_score
+
     def _getTopK(self):
         self.rankResult = []
         self._getCandidate()
@@ -63,14 +67,19 @@ class TopKSubAreas(object):
             rank = self._originMethod()
         elif self.method == "mlp":
             rank = self._mlp()
+        elif self.method == "rnn":
+            rank = self._rnn()
         else:
             rank = []
 
-        for oneItem in rank:
-            if oneItem[1] >= self.threshold:
-                self.rankResult.append(oneItem)
-            else:
-                break
+        if self.method != "rnn":
+            for oneItem in rank:
+                if oneItem[1] >= self.threshold:
+                    self.rankResult.append(oneItem)
+                else:
+                    break
+        else:
+            self.rankResult = rank
 
     def getResult(self):
         self._getTopK()

@@ -21,6 +21,9 @@ def getCandidateList(path="data/cs_candidate.json"):
     with open(path, "r") as f:
         data = json.load(f)
     assert type(data) == list
+    tmp = np.asarray(data)
+    np.random.shuffle(tmp) # shuffle
+    data = list(tmp)
 
     emb = []
     emb.append(list(np.zeros(200, dtype=np.float32))) # "EOS" embedding
