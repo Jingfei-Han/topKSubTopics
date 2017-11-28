@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import time
 from flask import Flask, request, jsonify
-from utils import normalize_name_for_querying_vector_model
+from utils import normalize_name_for_querying_vector_model,normalize_name_for_space_name, normalize_display_name
 from topKSubAreas import TopKSubAreas
 
 app = Flask(__name__)
@@ -16,7 +16,7 @@ def topics():
     context = request.args.get('context', 'computer_science')
     k = request.args.get('k', 10, int)
     weighting_mode = request.args.get("weighting_mode", 0, int) #0 is simple version
-    compute_mode = request.args.get("compute_mode", 0, int)
+    compute_mode = request.args.get("compute_mode", 0, int) #0 is mixed wiki, acm and mag
     method = request.args.get("method", "origin")
     confidence = request.args.get("confidence", 0.0, float)
 
@@ -25,8 +25,11 @@ def topics():
     context = context.strip()
     method = method.strip()
 
-    area_name = normalize_name_for_querying_vector_model(area_name)
-    context = normalize_name_for_querying_vector_model(context)
+    area_name = normalize_name_for_space_name(area_name)
+    context = normalize_name_for_space_name(context)
+
+    #area_name = normalize_name_for_querying_vector_model(area_name)
+    #context = normalize_name_for_querying_vector_model(context)
 
 
     # get class instance
@@ -37,7 +40,7 @@ def topics():
     #print(ranked_scores)
 
     end_query = time.time()
-    r = {'area': area_name, 'result': ranked_scores, 'time':end_query-start_query}
+    r = {'area': normalize_display_name(area_name), 'result': ranked_scores, 'time':end_query-start_query}
     #return r
     return jsonify(r)
     # return

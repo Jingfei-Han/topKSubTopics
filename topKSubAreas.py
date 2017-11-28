@@ -1,6 +1,6 @@
 from model import originMethod, mlpMethod, rnnMethod
 import math
-from utils import getCandidateSet
+from utils import getCandidateSet, normalize_display_name
 
 class TopKSubAreas(object):
     def __init__(self, area="machine_learning", context="computer_science",
@@ -75,13 +75,18 @@ class TopKSubAreas(object):
         if self.method != "rnn":
             for oneItem in rank:
                 if oneItem[1] >= self.threshold:
-                    self.rankResult.append(oneItem)
+                    displayname = normalize_display_name(oneItem[0])
+                    self.rankResult.append(displayname)
                 else:
                     break
         else:
-            self.rankResult = rank
+            self.rankResult = [normalize_display_name(i) for i in rank]
 
     def getResult(self):
-        self._getTopK()
+        try:
+            self._getTopK()
+        except:
+            #if we get expetion, return empty
+            self.rankResult = []
         return self.rankResult
 

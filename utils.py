@@ -6,7 +6,7 @@ import os
 
 def normalize_name_for_space_name(name):
     # e.g.: "machine learning algorithms" --> "machine_learning_agorithm"
-    tmp = "_".join(name.split(" "))
+    tmp = "_".join(name.split())
     name = normalize_name_for_querying_vector_model(tmp)
     return name
 
@@ -17,6 +17,11 @@ def normalize_name_for_querying_vector_model(name):
         tmp[i] = lemmatize(tmp[i])
     name = '_'.join(tmp)
     return name
+
+def normalize_display_name(name):
+    #e.g. "machine_learning" --> "Machine Learning"
+    tmp = name.split("_")
+    return " ".join(i.title() for i in tmp)
 
 #subcats
 def subcats_not_more_than_depth(area, depth):
