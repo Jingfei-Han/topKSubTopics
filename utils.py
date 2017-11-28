@@ -1,6 +1,6 @@
 from nltk.stem import WordNetLemmatizer
 lemmatize = WordNetLemmatizer().lemmatize
-from globalVar import taxonomy, mag, ccs
+from globalVar import taxonomy, mag, ccs, parent_taxonomy
 from collections import defaultdict
 import os
 
@@ -31,8 +31,24 @@ def subcats_not_more_than_depth(area, depth):
         for j in subcats[-1]:
             if j in taxonomy:
                 tmpcats.update(taxonomy[j]['subcats'])
-        subcats.append(tmpcats)
+        if len(tmpcats) > 0:
+            subcats.append(tmpcats)
+        else:
+            break
     return subcats
+
+def parents_not_more_than_depth(area, depth):
+    parents = [set([area])]
+    for i in range(depth):
+        tmpcats = set()
+        for j in parents[-1]:
+            if j in parent_taxonomy:
+                tmpcats.update(parent_taxonomy[j])
+        if len(tmpcats) > 0:
+            parents.append(tmpcats)
+        else:
+            break
+    return parents
 
 def get_subcats(area, data):
     #just two layers
@@ -62,8 +78,8 @@ def mergeTwoSet(subcat1, subcat2):
     return subcats
 
 def getCandidateSet(area, compute_mode, depth):
-    # the number of the mode: 4
-    if compute_mode >= 4:
+    # the number of the mode: 5
+    if compute_mode >= 5:
         compute_mode = 0
     if compute_mode == 0:
         #mixed taxonomy, mag and css
@@ -79,9 +95,12 @@ def getCandidateSet(area, compute_mode, depth):
     elif compute_mode == 1:
         #origin:
         candidateSet = subcats_not_more_than_depth(area=area, depth=depth)
-    elif compute_mode ==2:
+    elif compute_mode == 2:
         #mag
         candidateSet = get_subcats(area, mag)
+    elif compute_mode == 3:
+        #compute parent candidate set
+        candidateSet = parents_not_more_than_depth(area=area, depth=3)
     else:
         candidateSet = get_subcats(area, ccs)
 

@@ -4,7 +4,7 @@ from utils import getCandidateSet, normalize_display_name
 
 class TopKSubAreas(object):
     def __init__(self, area="machine_learning", context="computer_science",
-                 k=15, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin"):
+                 k=15, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin", has_parent=False):
         self.area = area
         self.context = context
         self.k = k
@@ -16,6 +16,10 @@ class TopKSubAreas(object):
         self.candidateSet = None #[set, set, set, ...]
         self.candidateWeight = None
         self.rankResult = None
+
+        self.has_parent = has_parent
+        self.candidateParentSet = None
+        self.rankParentResult = None
 
         self.method = method
 
@@ -47,10 +51,19 @@ class TopKSubAreas(object):
                 break
             self.candidateWeight.append(weight_for_depth_d)
 
-    def _originMethod(self):
-        assert self.candidateWeight is not None #assure weight is not none
-        ranked_scores = originMethod(self.candidateWeight, self.candidateSet, self.k, self.context)
+        if self.has_parent:
+            self.candidateParentSet = getCandidateSet(area=self.area, depth=self.candidateDepth, compute_mode=3)
+
+
+    def _originMethod(self, isParent = False):
+        if not isParent:
+            assert self.candidateWeight is not None #assure weight is not none
+            ranked_scores = originMethod(self.candidateWeight, self.candidateSet, self.k, self.context)
+        else:
+            #parent
+            ranked_scores = originMethod(self.candidateWeight, self.candidateParentSet, self.k, self.context)
         return ranked_scores
+
 
     def _mlp(self):
         ranked_scores = mlpMethod(self.candidateSet, self.k)
@@ -62,6 +75,7 @@ class TopKSubAreas(object):
 
     def _getTopK(self):
         self.rankResult = []
+
         self._getCandidate()
         if self.method == "origin":
             rank = self._originMethod()
@@ -82,11 +96,24 @@ class TopKSubAreas(object):
         else:
             self.rankResult = [normalize_display_name(i) for i in rank]
 
+        #parent
+        self.rankParentResult = []
+        if self.has_parent:
+            rank = self._originMethod(isParent=True)
+            for oneItem in rank:
+                if oneItem[1] >= self.threshold:
+                    displayname = normalize_display_name(oneItem[0])
+                    self.rankParentResult.append(displayname)
+                else:
+                    break
+
+
     def getResult(self):
         try:
             self._getTopK()
         except:
             #if we get expetion, return empty
             self.rankResult = []
-        return self.rankResult
+            self.rankParentResult = []
+        return self.rankResult, self.rankParentResult
 
