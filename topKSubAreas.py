@@ -56,7 +56,7 @@ class TopKSubAreas(object):
             self.candidateWeight.append(weight_for_depth_d)
 
         if self.has_parents:
-            self.candidateParentSet = getCandidateSet(area=self.area, depth=self.candidateDepth, compute_mode=3)
+            self.candidateParentSet = getCandidateSet(area=self.area, depth=1, compute_mode=3)
 
 
     def _originMethod(self, isParent = False):

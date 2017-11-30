@@ -125,7 +125,7 @@ def getCandidateSet(area, compute_mode, depth):
         candidateSet = get_subcats(area, mag)
     elif compute_mode == 3:
         #compute parent candidate set
-        candidateSet = parents_not_more_than_depth(area=area, depth=1)
+        candidateSet = parents_not_more_than_depth(area=area, depth=depth)
     else:
         candidateSet = get_subcats(area, ccs)
 

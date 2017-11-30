@@ -8,6 +8,7 @@ from flask_cors import CORS
 import json
 from collections import defaultdict, OrderedDict
 import copy
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -135,6 +136,15 @@ def topics():
     context = context.strip()
     method = method.strip()
 
+    #cache name
+    filename = "_".join("{}" for i in range(12)).format(area_name, context, k, kp, confidence, weighting_mode, compute_mode, method,
+                            depth_of_tree, depth_of_parents, has_children, has_parents)
+    filename = os.path.join(cachePath, filename)
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            result = json.load(f, object_pairs_hook=OrderedDict)
+            return jsonify(result)
+
     area_name = normalize_name_for_space_name(area_name)
     context = normalize_name_for_space_name(context)
     display_name = normalize_display_name(area_name)
@@ -157,14 +167,23 @@ def topics():
         root_p = copy.deepcopy(dic_p[display_name])
         showTopics_p = set()
         root_p = get_hierarchy(data = dic_p, root = root_p, name = display_name, n = 0,
-                             depth = depth_of_tree, showTopics= showTopics_p, c_or_p= "parents")
+                             depth = depth_of_parents, showTopics= showTopics_p, c_or_p= "parents")
 
     root_res = defaultdict(OrderedDict)
     root_res["name"] = display_name
+    len_chidren = 0
+    len_parents = 0
     if has_children:
         root_res["children"] = root["children"]
+        len_chidren = len(root_res["children"])
     if has_parents:
         root_res["parents"] = root_p["parents"]
+        len_parents = len(root_p["parents"])
+
+    if not os.path.exists(filename):
+        if len_chidren !=0 or len_parents != 0:
+            with open(filename, "w") as f:
+                json.dump(root_res, f, indent=4)
 
     end_query = time.time()
     #compute_time = end_query - start_query
@@ -175,6 +194,8 @@ def main():
 
 if __name__ == '__main__':
     start_t = time.time()
+    global cachePath
+    cachePath = "./.cache/"
     main()
     end_t = time.time()
     t = end_t - start_t
