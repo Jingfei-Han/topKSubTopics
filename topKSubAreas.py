@@ -1,13 +1,14 @@
 from model import originMethod, mlpMethod, rnnMethod
 import math
-from utils import getCandidateSet, normalize_display_name
+from utils import getCandidateSet, normalize_display_name, normalize_name_for_space_name
 
 class TopKSubAreas(object):
     def __init__(self, area="machine_learning", context="computer_science",
-                 k=15, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin", has_parent=False):
-        self.area = area
-        self.context = context
-        self.k = k
+                 k=15, kp=3, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin", has_parents=False, has_children=True):
+        self.area = normalize_name_for_space_name(area.lower())
+        self.context = normalize_name_for_space_name(context.lower())
+        self.k = k #top k childrens
+        self.kp = kp #top kp parents
         self.threshold = threshold
         self.weighting_mode = weighting_mode
         self.compute_mode = compute_mode
@@ -16,8 +17,9 @@ class TopKSubAreas(object):
         self.candidateSet = None #[set, set, set, ...]
         self.candidateWeight = None
         self.rankResult = None
+        self.has_children = has_children
 
-        self.has_parent = has_parent
+        self.has_parents = has_parents
         self.candidateParentSet = None
         self.rankParentResult = None
 
@@ -25,6 +27,8 @@ class TopKSubAreas(object):
 
     def set_k(self, k):
         self.k = k
+    def set_kp(self, kp):
+        self.kp = kp
     def set_area(self, area):
         self.area = area
     def set_context(self, context):
@@ -51,7 +55,7 @@ class TopKSubAreas(object):
                 break
             self.candidateWeight.append(weight_for_depth_d)
 
-        if self.has_parent:
+        if self.has_parents:
             self.candidateParentSet = getCandidateSet(area=self.area, depth=self.candidateDepth, compute_mode=3)
 
 
@@ -61,7 +65,7 @@ class TopKSubAreas(object):
             ranked_scores = originMethod(self.candidateWeight, self.candidateSet, self.k, self.context)
         else:
             #parent
-            ranked_scores = originMethod(self.candidateWeight, self.candidateParentSet, self.k, self.context)
+            ranked_scores = originMethod(self.candidateWeight, self.candidateParentSet, self.kp, self.context)
         return ranked_scores
 
 
@@ -75,30 +79,32 @@ class TopKSubAreas(object):
 
     def _getTopK(self):
         self.rankResult = []
-
-        self._getCandidate()
-        if self.method == "origin":
-            rank = self._originMethod()
-        elif self.method == "mlp":
-            rank = self._mlp()
-        elif self.method == "rnn":
-            rank = self._rnn()
-        else:
-            rank = []
-
-        if self.method != "rnn":
-            for oneItem in rank:
-                if oneItem[1] >= self.threshold:
-                    displayname = normalize_display_name(oneItem[0])
-                    self.rankResult.append(displayname)
-                else:
-                    break
-        else:
-            self.rankResult = [normalize_display_name(i) for i in rank]
-
         #parent
         self.rankParentResult = []
-        if self.has_parent:
+        self._getCandidate()
+
+        if self.has_children:
+
+            if self.method == "origin":
+                rank = self._originMethod()
+            elif self.method == "mlp":
+                rank = self._mlp()
+            elif self.method == "rnn":
+                rank = self._rnn()
+            else:
+                rank = []
+
+            if self.method != "rnn":
+                for oneItem in rank:
+                    if oneItem[1] >= self.threshold:
+                        displayname = normalize_display_name(oneItem[0])
+                        self.rankResult.append(displayname)
+                    else:
+                        break
+            else:
+                self.rankResult = [normalize_display_name(i) for i in rank]
+
+        if self.has_parents:
             rank = self._originMethod(isParent=True)
             for oneItem in rank:
                 if oneItem[1] >= self.threshold:

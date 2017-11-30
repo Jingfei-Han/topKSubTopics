@@ -61,7 +61,7 @@ def parentTaxonomy():
         for j in new_tax[i]:
             parent_tax[j].add(i)
     with open("data/parent_taxonomy.pkl", "wb") as f:
-        pickle.dump(parent_tax, f)
+        pickle.dump(parent_tax, f, protocol=2)
     print("save parent taxonomy successfully!")
     return parent_tax
 
@@ -73,13 +73,19 @@ w2v_model = None
 mag = None
 mlp_model = None
 rnn_model = None
+"""
+taxonomy_infile = "/dev/shm/b/wiki_taxonomy_lemmatized.pkl" #pickle 2
+parent_taxonomy_infile = "data/parent_taxonomy.pkl"
+vector_model_infile = "/dev/shm/a/wiki_text_20161201_1to4_200d.model"
+mag_infile = "/dev/shm/b/mag2.pkl"
+ccs_infile = "/dev/shm/b/acm_ccs.pkl"
+"""
 
-taxonomy_infile = "/dev/shm/a/wiki_taxonomy_lemmatized.pkl"
+taxonomy_infile = "/dev/shm/a/wiki_taxonomy_lemmatized.pkl" #pickle 3
 parent_taxonomy_infile = "data/parent_taxonomy.pkl"
 vector_model_infile = "/dev/shm/a/wiki_text_20161201_1to4_200d.model"
 mag_infile = "/dev/shm/a/mag2.pkl"
 ccs_infile = "/dev/shm/a/acm_ccs.pkl"
-
 mlp_infile = "data/mlp_model.h5"
 
 taxonomy = load_taxonomy(taxonomy_infile)

@@ -1,8 +1,33 @@
 from nltk.stem import WordNetLemmatizer
 lemmatize = WordNetLemmatizer().lemmatize
 from globalVar import taxonomy, mag, ccs, parent_taxonomy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import os
+import copy
+
+"""
+class Node(object):
+    def __init__(self, name, children=[], parents=[]):
+        self.name = name
+
+        self.setChildren(children)
+        self.setParents(parents)
+
+    def setChildren(self, childrenList):
+        self.children = []
+        for i in childrenList:
+            self.children.append(Node(i))
+
+    def setParents(self, parentsList):
+        self.parents = []
+        for i in parentsList:
+            self.parents.append(Node(i))
+
+class OrderedDefaultDict(OrderedDict, defaultdict):
+    def __init__(self, default_factory=None, *args, **kwargs):
+        super(OrderedDefaultDict, self).__init__(*args, **kwargs)
+        self.default_factory = default_factory
+"""
 
 def normalize_name_for_space_name(name):
     # e.g.: "machine learning algorithms" --> "machine_learning_agorithm"
@@ -100,7 +125,7 @@ def getCandidateSet(area, compute_mode, depth):
         candidateSet = get_subcats(area, mag)
     elif compute_mode == 3:
         #compute parent candidate set
-        candidateSet = parents_not_more_than_depth(area=area, depth=3)
+        candidateSet = parents_not_more_than_depth(area=area, depth=1)
     else:
         candidateSet = get_subcats(area, ccs)
 
@@ -123,3 +148,79 @@ def make_dir(path):
         os.mkdir(path)
     except OSError:
         pass
+
+
+def get_hierarchy(data, root, name, n, depth, showTopics, c_or_p="children"):
+    if len(root[c_or_p]) == 0:
+        root[c_or_p] = []
+        return root
+    if n == depth:
+        root[c_or_p] = []
+        return root
+    else:
+        for i in range(len(root[c_or_p])-1, -1, -1):
+            name = root[c_or_p][i]
+            if name not in showTopics:
+                showTopics.add(name)
+            else:
+                del root[c_or_p][i]
+                continue
+            tmp = data[name]
+            try:
+                tmp.pop("level")
+            except:
+                pass
+            root_tmp = copy.deepcopy(tmp)
+            root[c_or_p][i] = get_hierarchy(data, root_tmp, name, n+1, depth, showTopics, c_or_p=c_or_p)
+    return root
+
+def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method, confidence, depth_of_tree, c_or_p="children"):
+
+    c_or_p = c_or_p.lower().strip()
+    if c_or_p != "children":
+        c_or_p = "parents"
+    cur_index, has_parents, has_children = (0, False, True) if c_or_p == "children" else (1, True, False)
+
+    result = get_topk(area_name, context, k, kp, weighting_mode, compute_mode, method, confidence, has_parents, has_children)
+    display_name = normalize_display_name(area_name)
+    """save to an OrderedDefaultDict -- children"""
+    dic = defaultdict(OrderedDict)
+
+    dic[display_name]["name"] = display_name
+    dic[display_name]["level"] = 0
+    dic[display_name][c_or_p] = result[cur_index]
+
+    for depth in range(1, depth_of_tree + 1):
+        for topic in list(dic):
+            if dic[topic]["level"] == depth - 1:
+                for subtopic in dic[topic][c_or_p]:
+                    # subtopic is a display name
+                    if subtopic not in dic.keys():
+                        tmp = get_topk(subtopic, context, k, kp, weighting_mode, compute_mode, method, confidence, has_parents=has_parents, has_children=has_children)
+                        dic[subtopic]["name"] = subtopic
+                        dic[subtopic]["level"] = depth
+                        dic[subtopic][c_or_p] = tmp[cur_index]
+
+    def preprocess(c_or_p):
+        #preprocess: handle the same subtopic
+        #Record childset
+        childRecord = [display_name]
+        for curParent in childRecord:
+            if curParent in dic:
+                dic[curParent][c_or_p] = dic[curParent][c_or_p][::-1] # reverse, in order to delete
+                childList = dic[curParent][c_or_p]
+                for i in range(len(childList)-1, -1, -1):
+                    curChild = childList[i]
+                    if curChild in childRecord:
+                        del childList[i]
+                    else:
+                        childRecord.append(curChild)
+                dic[curParent][c_or_p] = dic[curParent][c_or_p][::-1]
+            else:
+                continue
+        return dic
+
+    dic = preprocess(c_or_p)
+
+    return dic
+
