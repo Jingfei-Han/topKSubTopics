@@ -96,8 +96,8 @@ def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method,
     return dic
 
 #hierarchy:
-@app.route("/hierarchy")
-def hierarchy():
+@app.route("/topics")
+def topics():
     start_query = time.time()
 
     #get parameters from request
@@ -163,47 +163,6 @@ def hierarchy():
     end_query = time.time()
     #compute_time = end_query - start_query
     return jsonify(root_res)
-
-@app.route("/topics")
-def topics():
-    start_query = time.time()
-
-    #get parameters from request
-    area_name = request.args.get('area', 'machine_learning')
-    context = request.args.get('context', 'computer_science')
-    k = request.args.get('k', 10, int)
-    weighting_mode = request.args.get("weighting_mode", 0, int) #0 is simple version
-    compute_mode = request.args.get("compute_mode", 0, int) #0 is mixed wiki, acm and mag
-    method = request.args.get("method", "origin")
-    confidence = request.args.get("confidence", 0.0, float)
-    has_parent = request.args.get("has_parent", 0, int)
-    if has_parent >= 1:
-        has_parent = True
-    else:
-        has_parent = False
-
-    # preprocess
-    area_name = area_name.strip()
-    context = context.strip()
-    method = method.strip()
-
-    area_name = normalize_name_for_space_name(area_name)
-    context = normalize_name_for_space_name(context)
-
-    # get class instance
-    topK_subAreas = TopKSubAreas(area = area_name, context = context, k = k, threshold = confidence,
-                                 weighting_mode = weighting_mode, compute_mode = compute_mode,
-                                 method=method, has_parent=has_parent)
-    ranked_scores = topK_subAreas.getResult()
-
-    end_query = time.time()
-    #compute_time = end_query - start_query
-    if has_parent:
-        r = {'area': normalize_display_name(area_name), 'result': ranked_scores[0], 'parents': ranked_scores[1]}
-    else:
-        r = {'area': normalize_display_name(area_name), 'result': ranked_scores[0]}
-
-    return jsonify(r)
 
 def main():
     app.run(host="0.0.0.0", port=5097)
