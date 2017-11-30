@@ -114,6 +114,12 @@ def topics():
     depth_of_tree = request.args.get("depth", 1, int) #depth: the depth of hierarchical tree
     depth_of_parents = request.args.get("depth_p", 1, int) #depth_p: the depth of parents tree
 
+    # restrict k, kp <= 30, depth_of_tree, depth_of_parents <=5
+    k = min(k, 30)
+    kp = min(kp, 30)
+    depth_of_tree = min(depth_of_tree, 5)
+    depth_of_parents = min(depth_of_parents, 5)
+
     if has_parents >= 1:
         has_parents = True
     else:
@@ -165,7 +171,7 @@ def topics():
     return jsonify(root_res)
 
 def main():
-    app.run(host="0.0.0.0", port=5097)
+    app.run(host="0.0.0.0", port=5098)
 
 if __name__ == '__main__':
     start_t = time.time()
