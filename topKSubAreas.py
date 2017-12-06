@@ -4,7 +4,7 @@ from utils import getCandidateSet, normalize_display_name, normalize_name_for_sp
 
 class TopKSubAreas(object):
     def __init__(self, area="machine_learning", context="computer_science",
-                 k=15, kp=3, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin", has_parents=False, has_children=True):
+                 k=15, kp=3, threshold = 0.0, weighting_mode=0, compute_mode=0, method="origin", has_parents=False, has_children=True, has_similiarity=False):
         self.area = normalize_name_for_space_name(area.lower())
         self.context = normalize_name_for_space_name(context.lower())
         self.k = k #top k childrens
@@ -24,6 +24,7 @@ class TopKSubAreas(object):
         self.rankParentResult = None
 
         self.method = method
+        self.has_similarity = has_similiarity
 
     def set_k(self, k):
         self.k = k
@@ -97,7 +98,7 @@ class TopKSubAreas(object):
             if self.method != "rnn":
                 for oneItem in rank:
                     if oneItem[1] >= self.threshold:
-                        displayname = normalize_display_name(oneItem[0])
+                        displayname = normalize_display_name(oneItem[0]) if self.has_similarity is False else oneItem
                         self.rankResult.append(displayname)
                     else:
                         break
@@ -108,7 +109,7 @@ class TopKSubAreas(object):
             rank = self._originMethod(isParent=True)
             for oneItem in rank:
                 if oneItem[1] >= self.threshold:
-                    displayname = normalize_display_name(oneItem[0])
+                    displayname = normalize_display_name(oneItem[0]) if self.has_similarity is False else oneItem
                     self.rankParentResult.append(displayname)
                 else:
                     break

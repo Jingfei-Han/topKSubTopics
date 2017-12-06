@@ -32,11 +32,13 @@ def getCandidateMap(candidate):
         topic2index[j] = i+1
         index2topic[i+1] = j
     tmp = i+1
+    """
     topic2index["EOS"] = tmp+1
     index2topic[tmp+1] = "EOS"
 
     topic2index["0"] = 0
     index2topic[0] = "0"
+    """
     return topic2index, index2topic
 
 def words_encode(text, t2i):
