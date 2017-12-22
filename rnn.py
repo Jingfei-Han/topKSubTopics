@@ -6,12 +6,12 @@ import time
 import json
 import pickle
 
-#DATA_PATH = "data/rnn_data.txt"
-DATA_PATH = "data/rnn_data_sample_repeat.txt"
+#DATA_PATH = "data/rnn_samples_new_repeat.json"
+DATA_PATH = "data/rnn_samples_new.json"
 HIDDEN_SIZE = 100
 EMBED_SIZE = 200
-BATCH_SIZE = 64
-NUM_STEPS = 60
+BATCH_SIZE = 128
+NUM_STEPS = 17
 SKIP_STEP = 50
 TEMPRATURE = 0.7
 LR = 0.001
@@ -31,14 +31,15 @@ def getCandidateMap(candidate):
     for i, j in enumerate(candidate):
         topic2index[j] = i+1
         index2topic[i+1] = j
-    tmp = i+1
     """
+    tmp = i+1
     topic2index["EOS"] = tmp+1
     index2topic[tmp+1] = "EOS"
+    """
 
+    #"sentences include '0', it's a problem"
     topic2index["0"] = 0
     index2topic[0] = "0"
-    """
     return topic2index, index2topic
 
 def words_encode(text, t2i):
@@ -69,243 +70,66 @@ def read_batch(stream, batch_size=BATCH_SIZE):
             batch = []
     yield batch
 
+def get_length(sequence):
+    # batch_size * NUM_STEP * VOCAB_SIZE
+    used = tf.sign(tf.reduce_max(tf.abs(sequence), 2))
+    length = tf.reduce_sum(used, 1)
+    length = tf.cast(length, tf.int32)
+    return length
+
 def create_rnn(seq, hidden_size=HIDDEN_SIZE):
     #cell = tf.contrib.rnn.GRUCell(hidden_size)
     with tf.variable_scope("GRU", reuse=True) as scope:
         cell = tf.nn.rnn_cell.GRUCell(hidden_size)
     in_state = tf.placeholder_with_default(
                 cell.zero_state(tf.shape(seq)[0], tf.float32), [None, hidden_size])
-    length = tf.reduce_sum(tf.reduce_max(tf.sign(seq), 2), 1) + 1
+    #length = tf.reduce_sum(tf.reduce_max(tf.sign(seq), 2), 1) + 1
+    length = get_length(seq)
     output, out_state = tf.nn.dynamic_rnn(cell, seq, length, in_state, scope="GRU")
     return output, in_state, out_state
 
 
-def create_model(seq, temp, i2t, hidden=HIDDEN_SIZE):
+def create_model(seq, temp, i2t, hidden=HIDDEN_SIZE, num_samples=512):
     one_hot = tf.one_hot(seq, len(i2t))
     embed_matrix = tf.Variable(tf.constant(0.0, shape=[len(i2t), EMBED_SIZE]), trainable=False, name="embed_matrix")
     embedding_placehoder = tf.placeholder(dtype=tf.float32, shape=[len(i2t), EMBED_SIZE])
     embedding_init = embed_matrix.assign(embedding_placehoder)
     seq = tf.nn.embedding_lookup(embed_matrix, seq, name="embed")
     output, in_state, out_state = create_rnn(seq, hidden)
+    #full softmax
     logits = tf.contrib.layers.fully_connected(output, len(i2t), None)
     loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=logits[:, :-1], labels=one_hot[:, 1:]))
+    mask = tf.sign(tf.reduce_max(tf.abs(one_hot[:, 1:]), 2))
+    loss *= mask
+    loss = tf.reduce_sum(loss, 1) * 1.0 / tf.reduce_sum(mask, 1)
+
+    #sampled-softmax-loss
+    proj_w = tf.get_variable("proj_w", [len(i2t), HIDDEN_SIZE], dtype=tf.float32)
+    proj_b = tf.get_variable("proj_b", [len(i2t)], dtype=tf.float32)
+    sampled_loss = tf.nn.sampled_softmax_loss(
+        weights=proj_w,
+        biases=proj_b,
+        labels=seq[:, 1:],
+        inputs=output,
+        num_sampled=512,
+        num_classes=len(i2t)
+    )
+    sampled_loss *= mask
+    sampled_loss = tf.reduce_mean(sampled_loss, 1) * 1.0 / tf.reduce_sum(mask, 1)
 
     y_hat = tf.nn.softmax(logits)
     sample = tf.argmax(y_hat, 0)
     #sample = tf.multinomial(tf.exp(logits[:, -1]/temp), 1)[:, 0]
 
-    return loss, sample, in_state, out_state, embedding_init, embedding_placehoder
-
-def training(t2i, i2t, seq, loss, optimizer, global_step, temp, sample, in_state, out_state, embedding_init, embedding_placeholder, embedding, isTraining=True, area="machine_learning"):
-    saver = tf.train.Saver()
-    start = time.time()
-    with tf.Session() as sess:
-        writer= tf.summary.FileWriter("graphs/rnn", sess.graph)
-        sess.run(tf.global_variables_initializer())
-        sess.run(embedding_init, feed_dict={embedding_placeholder:embedding})
-
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname("checkpoints/rnn/checkpoints"))
-        if ckpt and ckpt.model_checkpoint_path:
-            saver.restore(sess, ckpt.model_checkpoint_path)
-
-        if isTraining:
-            for epoch in range(30):
-                epoch_time = time.time()
-
-                iteration = global_step.eval()
-                for batch in read_batch(read_data(DATA_PATH, t2i=t2i)):
-                    batch_loss, _ = sess.run([loss, optimizer], {seq: batch})
-                    print(iteration, batch_loss)
-
-                    if (iteration + 1) % SKIP_STEP == 0:
-                        print("Iter {}. \n LOSS {}. Time{}".format(iteration, batch_loss, time.time() - start))
-                        online_inference(sess, t2i, i2t, seq, sample, temp, in_state, out_state, seed=area)
-                        start = time.time()
-                        saver.save(sess, "checkpoints/rnn/result", iteration)
-                    iteration += 1
-                print("---------------------------------------------------------------")
-                print("Epoch {}. \n LOSS {}. Time{}".format(epoch, batch_loss, time.time() - epoch_time))
-
-        else:
-            sentence = online_inference(sess, t2i, i2t, seq, sample, temp, in_state, out_state, seed=area)
-            return sentence
-
-
-def online_inference(sess, t2i, i2t, seq, sample, temp, in_state, out_state, seed="machine_learning"):
-    sentence = [seed]
-    #entence = ["machine_learning"]
-    state = None
-    for _ in range(LEN_GENERATED):
-        batch = [words_encode([sentence[-1]], t2i=t2i)]
-        feed = {seq:batch, temp:TEMPRATURE}
-
-        if state is not None:
-            feed.update({in_state: state})
-        index, state = sess.run([sample, out_state], feed)
-        #print(np.max(index))
-        words = words_decode(index[-1], i2t)
-        if words[0] == "EOS":
-            sentence.extend(words)
-            break
-        elif words[0] == "0":
-            break
-        else:
-            sentence.extend(words)
-    print(sentence)
-    return sentence
-
-def main(isTraining=True, area="machine_learning"):
-    with open("data/cs_candidate.json", "r") as f:
-        candidate = json.load(f)
-    with open("data/cs_candidate_emb.pkl", "rb") as f:
-        embedding = pickle.load(f)
-    t2i, i2t = getCandidateMap(candidate)
-    seq = tf.placeholder(tf.int32, [None, None])
-    temp = tf.placeholder(tf.float32)
-    loss, sample, in_state, out_state, embedding_init, embedding_placeholder = create_model(seq, temp, i2t)
-    global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name="global_step")
-    optimizer = tf.train.GradientDescentOptimizer(LR).minimize(loss, global_step=global_step)
-    make_dir("checkpoints")
-    make_dir("checkpoints/rnn")
-    #return t2i, i2t, seq, loss, optimizer, global_step, temp, sample, in_state, out_state, embedding_init, embedding_placeholder, embedding
-    if isTraining:
-        training(t2i, i2t, seq, loss, optimizer, global_step, temp, sample, in_state, out_state, embedding_init, embedding_placeholder, embedding, isTraining, area)
-    else:
-        sentence = training(t2i, i2t, seq, loss, optimizer, global_step, temp, sample, in_state, out_state, embedding_init, embedding_placeholder, embedding, isTraining, area)
-        return sentence
-
-def main2(isTraining=True, area="machine_learning"):
-    for area in ["machine_learning", "deep_learning"]:
-        """
-        with open("data/cs_candidate.json", "r") as f:
-            candidate = json.load(f)
-        with open("data/cs_candidate_emb.pkl", "rb") as f:
-            embedding = pickle.load(f)
-        t2i, i2t = getCandidateMap(candidate)
-        seq = tf.placeholder(tf.int32, [None, None])
-        #temp = tf.placeholder(tf.float32)
-        #*********************************************************
-        #                       create model
-        #*********************************************************
-
-        one_hot = tf.one_hot(seq, len(i2t), dtype=tf.int32)
-        embed_matrix = tf.Variable(tf.constant(0.0, shape=[len(i2t), EMBED_SIZE]), trainable=False, name="embed_matrix")
-        embedding_placehoder = tf.placeholder(dtype=tf.float32, shape=[len(i2t), EMBED_SIZE])
-        embedding_init = embed_matrix.assign(embedding_placehoder)
-        seq2 = tf.nn.embedding_lookup(embed_matrix, seq, name="embed")
-
-        output, in_state, out_state = create_rnn(seq2, HIDDEN_SIZE)
-        logits = tf.contrib.layers.fully_connected(output, len(i2t), None)
-        loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=logits[:, :-1], labels=one_hot[:, 1:]))
-
-        y_hat = tf.nn.softmax(logits)
-        sample = tf.argmax(y_hat, 2)
-        #sample = tf.multinomial(tf.exp(logits[:, -1]/temp), 1)[:, 0]
-
-        global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name="global_step")
-        #-----optimizer-------
-        optimizer = tf.train.GradientDescentOptimizer(LR).minimize(loss, global_step=global_step)
-        make_dir("checkpoints")
-        make_dir("checkpoints/rnn")
-
-        #*********************************************************
-        #                       training model
-        #*********************************************************
-        saver = tf.train.Saver()
-        start = time.time()
-        """
-        with tf.Session() as sess:
-            writer= tf.summary.FileWriter("graphs/rnn", sess.graph)
-            sess.run(tf.global_variables_initializer())
-            sess.run(embedding_init, feed_dict={embedding_placehoder:embedding})
-
-            ckpt = tf.train.get_checkpoint_state(os.path.dirname("checkpoints/rnn/checkpoints"))
-            if ckpt and ckpt.model_checkpoint_path:
-                saver.restore(sess, ckpt.model_checkpoint_path)
-
-            if isTraining:
-
-                iteration = global_step.eval()
-                for epoch in range(30):
-                    epoch_time = time.time()
-                    for batch in read_batch(read_data(DATA_PATH, t2i=t2i)):
-                        batch_loss, _ = sess.run([loss, optimizer], {seq: batch})
-                        #test
-                        #sample2 = sess.run(sample, {seq:batch})
-                        #one_hot2 = sess.run(one_hot, {seq:batch})
-
-                        #print(sample2)
-                        #print(np.asarray(sample2).shape)
-                        #print(np.asarray(one_hot2).shape)
-
-                        if (iteration + 1) % SKIP_STEP == 0:
-                            print("Iter {}. \n LOSS {}. Time{}".format(iteration, batch_loss, time.time() - start))
-                            #online_inference(sess, t2i, i2t, seq, sample, temp, in_state, out_state)
-                            #*********************************************************
-                            #                       Inference
-                            #*********************************************************
-
-                            sentence = ["computer_science"]
-                            state = None
-                            for _ in range(LEN_GENERATED):
-                                batch = [words_encode([sentence[-1]], t2i=t2i)]
-                                feed = {seq:batch}
-
-                                #test
-                                #sample2 = sess.run(sample, feed)
-                                #one_hot2 = sess.run(one_hot, feed)
-
-                                #print(sample2)
-                                #print(np.asarray(sample2).shape)
-                                #print(np.asarray(one_hot2).shape)
-                                #print(np.argmax(np.asarray(one_hot2),2 ))
-
-                                if state is not None:
-                                    feed.update({in_state: state})
-                                index, state = sess.run([sample, out_state], feed)
-                                #print(np.max(index))
-                                words = words_decode(index[-1], i2t)
-                                if words[0] == "EOS":
-                                    sentence.extend(words)
-                                    break
-                                elif words[0] == "0":
-                                    break
-                                else:
-                                    sentence.extend(words)
-                            print(sentence)
-
-                            start = time.time()
-                            saver.save(sess, "checkpoints/rnn/result", iteration)
-                        iteration += 1
-
-                    print("---------------------------------------------------------------")
-                    print("Epoch {}. \n LOSS {}. Time{}".format(epoch, batch_loss, time.time() - epoch_time))
-            else:
-                sentence = [area]
-                state = None
-                for _ in range(LEN_GENERATED):
-                    batch = [words_encode([sentence[-1]], t2i=t2i)]
-                    feed = {seq:batch}
-                    if state is not None:
-                        feed.update({in_state: state})
-                    index, state = sess.run([sample, out_state], feed)
-                    words = words_decode(index[-1], i2t)
-                    if words[0] == "EOS":
-                        sentence.extend(words)
-                        break
-                    elif words[0] == "0":
-                        break
-                    else:
-                        sentence.extend(words)
-                print(sentence)
-                #return sentence
+    return sampled_loss, loss, sample, in_state, out_state, embedding_init, embedding_placehoder
 
 class RNN(object):
-    def __init__(self):
-        with open("data/cs_candidate.json", "r") as f:
+    def __init__(self, path_vocab="data/vocab_table.json", path_emb="data/vocab_emb.pkl"):
+        with open(path_vocab, "r") as f:
             self.candidate = json.load(f)
-        with open("data/cs_candidate_emb.pkl", "rb") as f:
+        with open(path_emb, "rb") as f:
             self.embedding = pickle.load(f)
+        self.embedding = [list(np.zeros(200))] + self.embedding # add 0 vector
 
         self.t2i, self.i2t = getCandidateMap(self.candidate)
         self.seq = tf.placeholder(tf.int32, [None, None])
@@ -326,16 +150,40 @@ class RNN(object):
         """
 
         self.output, self.in_state, self.out_state = create_rnn(self.seq2, HIDDEN_SIZE)
-        self.logits = tf.contrib.layers.fully_connected(self.output, len(self.i2t), None)
-        self.loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=self.logits[:, :-1], labels=self.one_hot[:, 1:]))
 
+        #full softmax
+        self.mask = tf.cast(tf.sign(tf.reduce_max(tf.abs(self.one_hot[:, 1:]), 2)), dtype=tf.float32)
+        #self.loss *= self.mask
+        #self.loss = tf.reduce_sum(self.loss, 1) * 1.0 / tf.reduce_sum(self.mask, 1)
+
+        #sampled-softmax-loss
+        self.proj_w = tf.get_variable("proj_w", [len(self.i2t), HIDDEN_SIZE], dtype=tf.float32)
+        self.proj_b = tf.get_variable("proj_b", [len(self.i2t)], dtype=tf.float32)
+        self.full_sample_loss = 0
+        for i in range(NUM_STEPS-1):
+            sampled_loss = tf.nn.sampled_softmax_loss(
+                weights=self.proj_w,
+                biases=self.proj_b,
+                labels=tf.reshape(self.seq[:, i+1], [-1, 1]),
+                inputs=self.output[:,i,:],
+                num_classes=len(self.i2t),
+                num_sampled=512,
+            )
+            self.full_sample_loss+=sampled_loss * self.mask[:, i]
+
+        #self.full_sample_loss *= self.mask
+        self.full_sample_loss_final = tf.reduce_sum(self.full_sample_loss) * 1.0 / tf.reduce_sum(self.mask)
+
+        self.logits = tf.matmul(tf.reshape(self.output, shape=[-1, HIDDEN_SIZE]), tf.transpose(self.proj_w)) + self.proj_b
+        #self.logits = tf.contrib.layers.fully_connected(self.output, len(self.i2t), None)
+        #self.loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits[:, :-1], labels=self.one_hot[:, 1:])
         self.y_hat = tf.nn.softmax(self.logits)
-        self.sample = tf.argmax(self.y_hat, 2)
+        self.sample = tf.argmax(self.y_hat, 1)
         #sample = tf.multinomial(tf.exp(logits[:, -1]/temp), 1)[:, 0]
 
         self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name="global_step")
         #-----optimizer-------
-        self.optimizer = tf.train.GradientDescentOptimizer(LR).minimize(self.loss, global_step=self.global_step)
+        self.optimizer = tf.train.GradientDescentOptimizer(LR).minimize(self.full_sample_loss_final, global_step=self.global_step)
         make_dir("checkpoints")
         make_dir("checkpoints/rnn")
 
@@ -359,11 +207,15 @@ class RNN(object):
                 iteration = self.global_step.eval()
                 for epoch in range(20):
                     epoch_time = time.time()
+                    epoch_loss = 0
                     for batch in read_batch(read_data(DATA_PATH, t2i=self.t2i)):
-                        batch_loss, _ = sess.run([self.loss, self.optimizer], {self.seq: batch})
+                        batch_loss, _ = sess.run([self.full_sample_loss_final, self.optimizer], {self.seq: batch})
+                        epoch_loss += batch_loss
+
                         if (iteration + 1) % SKIP_STEP == 0:
                             print("Iter {}. \n LOSS {}. Time{}".format(iteration, batch_loss, time.time() - start))
-                            sentence = ["computer_science"]
+                            sentence = ["machine_learning"]
+                            #prob = [1.0]
                             state = None
                             for _ in range(LEN_GENERATED):
                                 batch = [words_encode([sentence[-1]], t2i=self.t2i)]
@@ -372,7 +224,10 @@ class RNN(object):
                                 if state is not None:
                                     feed.update({self.in_state: state})
                                 index, state = sess.run([self.sample, self.out_state], feed)
-                                words = words_decode(index[-1], self.i2t)
+                                #print(y_hat)
+                                #print(len(y_hat[0]))
+                                #prob.append(list(y_hat[0][index])[0])
+                                words = words_decode(index, self.i2t)
                                 if words[0] == "EOS":
                                     sentence.extend(words)
                                     break
@@ -381,13 +236,14 @@ class RNN(object):
                                 else:
                                     sentence.extend(words)
                             print(sentence)
+                            #print(prob)
 
-                            start = time.time()
                             self.saver.save(sess, "checkpoints/rnn/result", iteration)
                         iteration += 1
-
                     print("---------------------------------------------------------------")
-                    print("Epoch {}. \n LOSS {}. Time{}".format(epoch, batch_loss, time.time() - epoch_time))
+                    print("Epoch {}. \n LOSS {}. Time{}".format(epoch, epoch_loss, time.time() - epoch_time))
+                print("Total time: {}.".format(time.time()-start))
+
             else:
                 sentence = [area]
                 state = None
@@ -415,7 +271,7 @@ class RNN(object):
 
 if __name__ == "__main__":
     rnnModel = RNN()
-    rnnModel.train(isTraining=True, area="computer_science")
+    rnnModel.train(isTraining=True, area="machine_learning")
     #main2(isTraining=False, area="computer_science")
     #s = main2(isTraining=False, area="computer_science")
     #print(s)
