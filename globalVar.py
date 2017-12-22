@@ -61,10 +61,51 @@ def parentTaxonomy():
         for j in new_tax[i]:
             parent_tax[j].add(i)
     with open("data/parent_taxonomy.pkl", "wb") as f:
-        pickle.dump(parent_tax, f, protocol=2)
+        pickle.dump(parent_tax, f)
     print("save parent taxonomy successfully!")
     return parent_tax
 
+def preprocessTaxonomy(taxonomy, start_area = "scientific_discipline"):
+    """
+    :param taxonomy:  raw taxonomy
+    :param start_area: only consider topic from start_area
+    :return: new_taxonomy which can replace taxonomy
+    """
+    new_tax = {}
+    A = set() # raw set
+    new_tax[start_area] = taxonomy[start_area]
+
+    #adjust
+    new_tax[start_area]["subcats"].remove("vietnam_war_patrol_vessel_of_the_united_state")
+    new_tax[start_area]["subcats"].add("natural_science")
+
+    #B = A.copy() # every iteration set
+    B = set()
+    B.add(start_area)
+    cnt = 0
+
+    while len(B) != len(A):
+        C = B - A
+        B_tmp = B.copy()
+        for i in C:
+            try:
+                if len(taxonomy[i]["subcats"]) > 100:
+                    # chemistry: 72 ge
+                    # delete the number of subcats greater than 40
+                    B.remove(i)
+                    B_tmp.remove(i)
+                    continue
+                new_tax[i] = taxonomy[i]
+                A.add(i)
+                for j in taxonomy[i]["subcats"]:
+                    B.add(j) # add all subcats in B, in order to iterate it next time.
+            except Exception as e:
+                print("ERROR 1: {}".format(e))
+        assert len(B_tmp) == len(A)
+        print("Epoch {}: len_A = {}, len_B = {}".format(cnt, len(A), len(B)))
+        cnt += 1
+
+    return new_tax
 
 
 taxonomy = None
@@ -89,6 +130,7 @@ ccs_infile = "/dev/shm/a/acm_ccs.pkl"
 mlp_infile = "data/mlp_model.h5"
 
 taxonomy = load_taxonomy(taxonomy_infile)
+taxonomy = preprocessTaxonomy(taxonomy)
 w2v_model = load_vector_model(vector_model_infile)
 mag = get_data_from_pickle(mag_infile)
 ccs = get_data_from_pickle(ccs_infile)
