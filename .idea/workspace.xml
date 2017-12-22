@@ -3,7 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="73ce4f97-c42f-4ed7-a45e-8aa34674a6cb" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/globalVar.py" afterPath="$PROJECT_DIR$/globalVar.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/api.py" afterPath="$PROJECT_DIR$/api.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model.py" afterPath="$PROJECT_DIR$/model.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -44,11 +45,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="api.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="api.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/api.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="17" column="4" lean-forward="false" selection-start-line="17" selection-start-column="4" selection-end-line="17" selection-end-column="4" />
+            <state relative-caret-position="577">
+              <caret line="197" column="4" lean-forward="false" selection-start-line="197" selection-start-column="4" selection-end-line="197" selection-end-column="4" />
               <folding>
                 <element signature="e#47#58#0" expanded="true" />
               </folding>
@@ -59,11 +60,9 @@
       <file leaf-file-name="topKSubAreas.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/topKSubAreas.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="68" column="32" lean-forward="false" selection-start-line="68" selection-start-column="32" selection-end-line="68" selection-end-column="32" />
-              <folding>
-                <element signature="e#0#52#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="0">
+              <caret line="0" column="26" lean-forward="true" selection-start-line="0" selection-start-column="26" selection-end-line="0" selection-end-column="26" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -71,8 +70,8 @@
       <file leaf-file-name="model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="324">
-              <caret line="22" column="4" lean-forward="false" selection-start-line="22" selection-start-column="4" selection-end-line="22" selection-end-column="4" />
+            <state relative-caret-position="-57">
+              <caret line="50" column="27" lean-forward="false" selection-start-line="50" selection-start-column="27" selection-end-line="50" selection-end-column="27" />
               <folding />
             </state>
           </provider>
@@ -81,14 +80,14 @@
       <file leaf-file-name="utils.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/utils.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-720">
+            <state relative-caret-position="-2127">
               <caret line="2" column="56" lean-forward="false" selection-start-line="2" selection-start-column="56" selection-end-line="2" selection-end-column="56" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="globalVar.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="globalVar.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/globalVar.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-21">
@@ -101,7 +100,7 @@
       <file leaf-file-name="rnn.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/rnn.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="531">
+            <state relative-caret-position="45">
               <caret line="118" column="0" lean-forward="false" selection-start-line="118" selection-start-column="0" selection-end-line="118" selection-end-column="0" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -131,14 +130,14 @@
         <option value="$PROJECT_DIR$/mlp.py" />
         <option value="$PROJECT_DIR$/lstm.py" />
         <option value="$PROJECT_DIR$/readme.txt" />
-        <option value="$PROJECT_DIR$/model.py" />
-        <option value="$PROJECT_DIR$/api.py" />
         <option value="$PROJECT_DIR$/topKSubAreas.py" />
         <option value="$PROJECT_DIR$/rnn_generateData.py" />
         <option value="$PROJECT_DIR$/rnn.py" />
         <option value="$PROJECT_DIR$/handle_tax.py" />
         <option value="$PROJECT_DIR$/utils.py" />
         <option value="$PROJECT_DIR$/globalVar.py" />
+        <option value="$PROJECT_DIR$/model.py" />
+        <option value="$PROJECT_DIR$/api.py" />
       </list>
     </option>
   </component>
@@ -441,7 +440,14 @@
       <option name="project" value="LOCAL" />
       <updated>1513911727080</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="add preprocess taxonomy to clean data">
+      <created>1513928850881</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1513928850881</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TodoView" selected-index="3">
@@ -503,7 +509,8 @@
     <MESSAGE value="fix context is empty" />
     <MESSAGE value="new genreate method" />
     <MESSAGE value="clean rnn" />
-    <option name="LAST_COMMIT_MESSAGE" value="clean rnn" />
+    <MESSAGE value="add preprocess taxonomy to clean data" />
+    <option name="LAST_COMMIT_MESSAGE" value="add preprocess taxonomy to clean data" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -755,6 +762,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="182">
           <caret line="1023" column="0" lean-forward="false" selection-start-line="1023" selection-start-column="0" selection-end-line="1023" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -776,6 +784,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="84">
           <caret line="1212" column="0" lean-forward="false" selection-start-line="1212" selection-start-column="0" selection-end-line="1212" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -783,44 +792,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3972">
           <caret line="310" column="0" lean-forward="false" selection-start-line="310" selection-start-column="0" selection-end-line="310" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/api.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="17" column="4" lean-forward="false" selection-start-line="17" selection-start-column="4" selection-end-line="17" selection-end-column="4" />
-          <folding>
-            <element signature="e#47#58#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="324">
-          <caret line="22" column="4" lean-forward="false" selection-start-line="22" selection-start-column="4" selection-end-line="22" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/topKSubAreas.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="68" column="32" lean-forward="false" selection-start-line="68" selection-start-column="32" selection-end-line="68" selection-end-column="32" />
-          <folding>
-            <element signature="e#0#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/rnn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="531">
-          <caret line="118" column="0" lean-forward="false" selection-start-line="118" selection-start-column="0" selection-end-line="118" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -834,9 +805,19 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-720">
+        <state relative-caret-position="-2127">
           <caret line="2" column="56" lean-forward="false" selection-start-line="2" selection-start-column="56" selection-end-line="2" selection-end-column="56" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rnn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="118" column="0" lean-forward="false" selection-start-line="118" selection-start-column="0" selection-end-line="118" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -845,6 +826,32 @@
         <state relative-caret-position="-21">
           <caret line="108" column="0" lean-forward="true" selection-start-line="108" selection-start-column="0" selection-end-line="108" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/topKSubAreas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="26" lean-forward="true" selection-start-line="0" selection-start-column="26" selection-end-line="0" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-57">
+          <caret line="50" column="27" lean-forward="false" selection-start-line="50" selection-start-column="27" selection-end-line="50" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/api.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="577">
+          <caret line="197" column="4" lean-forward="false" selection-start-line="197" selection-start-column="4" selection-end-line="197" selection-end-column="4" />
+          <folding>
+            <element signature="e#47#58#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

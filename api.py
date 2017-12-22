@@ -196,6 +196,7 @@ if __name__ == '__main__':
     start_t = time.time()
     global cachePath
     cachePath = "./.cache/"
+    #cachePath = "./.cache_debug/"
     main()
     end_t = time.time()
     t = end_t - start_t

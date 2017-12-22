@@ -34,6 +34,7 @@ def originMethod(candidateWeight, candidateSet, k, context):
                     tmpcats2 = candidateSet[d]
                     for c2 in tmpcats2:
                         try:
+                            # c: sub-area, c2: area, e.g. c:deep_learning; c2:machine_learning
                             tmp_score += w2v_model.n_similarity([c], [c2, context]) * candidateWeight[d]
                         except:
                             try:
@@ -45,6 +46,9 @@ def originMethod(candidateWeight, candidateSet, k, context):
                 scores[c] = tmp_score
             else:
                 pass
+    # special need , database's subarea includes xml
+    if area == "database":
+        scores["xml"] = 0.71
     ranked_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     #print(ranked_scores)
     ranked_scores = ranked_scores[:k]
