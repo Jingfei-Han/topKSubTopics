@@ -73,7 +73,7 @@ def preprocessTaxonomy(taxonomy, start_area = "scientific_discipline"):
     """
     new_tax = {}
     A = set() # raw set
-    new_tax[start_area] = taxonomy[start_area]
+    new_tax[start_area] = taxonomy[start_area].copy()
 
     #adjust
     new_tax[start_area]["subcats"].remove("vietnam_war_patrol_vessel_of_the_united_state")
@@ -104,6 +104,16 @@ def preprocessTaxonomy(taxonomy, start_area = "scientific_discipline"):
         assert len(B_tmp) == len(A)
         print("Epoch {}: len_A = {}, len_B = {}".format(cnt, len(A), len(B)))
         cnt += 1
+
+    print("delete invalid children...")
+    for j in new_tax.keys():
+        tmp = []
+        for i in new_tax[j]["subcats"]:
+            if i not  in new_tax.keys():
+                tmp.append(i)
+        for i in tmp:
+            new_tax[j]["subcats"].remove(i)
+    print("finish!")
 
     return new_tax
 
