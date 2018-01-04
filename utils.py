@@ -149,5 +149,58 @@ def make_dir(path):
     except OSError:
         pass
 
+def get_level(cur_tax, root):
+    cur_level = 0
+    cur_total = {root} #record the current total topic set
+    A = {root} # current set
+    record_results = []
+    while len(A) != 0:
+        record_results.append(A)
+        B = set()
+        for i in A:
+            B |= set(cur_tax[i])
+        B -= cur_total #except total set
+        A = B.copy()
+        cur_total |= B #cur_total U B
+        print("Current total: {}, A: {}".format(len(cur_total), len(A)))
+    return record_results
+
+
+def load_level_info(taxonomy, ccs, mag_fos_infile="data/fos_levelname.csv"):
+    # target: get a dict like : "ml":{"m":1, "w":2, "c":2}
+    assert taxonomy is not None
+    assert ccs is not None
+    #taxonomy: dict
+    assert mag_fos_infile is not None
+
+    topic2level = defaultdict(dict)
+
+    #mag level file:
+    mag_res = []
+    if not os.path.exists(mag_fos_infile):
+        with open(mag_fos_infile, "r") as f:
+            tmp = f.readlines()
+        for i in tmp:
+            mag_res.append(i.lower().strip().rsplit(",", 1)) #"A,B,C,L1" --> ["A,B,C", "L1"]
+
+    for i in mag_res:
+        cur_name =  normalize_name_for_space_name(i[0])
+        topic2level[cur_name]["m"] = int(i[1][-1]) + 1 #level from 1 to 4
+
+    record_ccs = get_level(ccs, "_root")
+    for index, cur_set in enumerate(record_ccs):
+        for topic in cur_set:
+            topic2level[topic]["c"] = index  #because _root is 0, we can consider root is level 0
+    ############################################## wiki 与 ccs 不同，wiki有subcats和subpages等
+
+    record_tax = get_level(taxonomy, "scientific_discipline")
+    for index, cur_set in enumerate(record_tax):
+        for topic in cur_set:
+            topic2level[topic]["w"] = index  #because _root is 0, we can consider root is level 0
+
+    return topic2level
+
+
+
 
 
