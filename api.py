@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import time
 from flask import Flask, request, jsonify
-from utils import normalize_name_for_space_name, normalize_display_name
+from utils import normalize_name_for_space_name, normalize_display_name, topic2level
 from topKSubAreas import TopKSubAreas
 from flask_cors import CORS
 import json
@@ -46,7 +46,7 @@ def get_hierarchy(data, root, name, n, depth, showTopics, c_or_p="children"):
             root[c_or_p][i] = get_hierarchy(data, root_tmp, name, n+1, depth, showTopics, c_or_p=c_or_p)
     return root
 
-def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method, confidence, depth_of_tree, c_or_p="children"):
+def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method, confidence, depth_of_tree, c_or_p="children", level=False):
 
     c_or_p = c_or_p.lower().strip()
     if c_or_p != "children":
@@ -60,6 +60,9 @@ def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method,
 
     dic[display_name]["name"] = display_name
     dic[display_name]["level"] = 0
+    if level:
+        dic[display_name]["levels"] = topic2level[normalize_name_for_space_name(display_name)]
+
     dic[display_name][c_or_p] = result[cur_index]
 
     for depth in range(1, depth_of_tree + 1):
@@ -71,6 +74,8 @@ def get_midDict(area_name, context, k, kp, weighting_mode, compute_mode, method,
                         tmp = get_topk(subtopic, context, k, kp, weighting_mode, compute_mode, method, confidence, has_parents=has_parents, has_children=has_children)
                         dic[subtopic]["name"] = subtopic
                         dic[subtopic]["level"] = depth
+                        if level:
+                            dic[subtopic]["levels"] = topic2level[normalize_name_for_space_name(subtopic)]
                         dic[subtopic][c_or_p] = tmp[cur_index]
 
     def preprocess(c_or_p):
@@ -115,6 +120,9 @@ def topics():
     depth_of_tree = request.args.get("depth", 1, int) #depth: the depth of hierarchical tree
     depth_of_parents = request.args.get("depth_p", 1, int) #depth_p: the depth of parents tree
 
+    #display absolute level
+    level = request.args.get("level", 0, int)
+
     # restrict k, kp <= 30, depth_of_tree, depth_of_parents <=5
     k = min(k, 30)
     kp = min(kp, 30)
@@ -131,14 +139,19 @@ def topics():
     else:
         has_children = False
 
+    if level >= 1:
+        level = True
+    else:
+        level = False
+
     # preprocess
     area_name = area_name.strip()
     context = context.strip()
     method = method.strip()
 
     #cache name
-    filename = "_".join("{}" for i in range(12)).format(area_name, context, k, kp, confidence, weighting_mode, compute_mode, method,
-                            depth_of_tree, depth_of_parents, has_children, has_parents)
+    filename = "_".join("{}" for i in range(13)).format(area_name, context, k, kp, confidence, weighting_mode, compute_mode, method,
+                            depth_of_tree, depth_of_parents, has_children, has_parents, level)
     filename = os.path.join(cachePath, filename)
     if os.path.exists(filename):
         with open(filename, "r") as f:
@@ -151,7 +164,7 @@ def topics():
     if has_children:
         dic = get_midDict(area_name = area_name, context = context, k = k, kp = kp, weighting_mode = weighting_mode,
                           compute_mode= compute_mode, method = method, confidence= confidence,
-                          depth_of_tree= depth_of_tree, c_or_p = "children")
+                          depth_of_tree= depth_of_tree, c_or_p = "children", level=level)
         tmp = dic[display_name]
         tmp.pop("level")
         root = copy.deepcopy(dic[display_name])
@@ -161,7 +174,7 @@ def topics():
     if has_parents:
         dic_p = get_midDict(area_name = area_name, context = context, k = k, kp = kp, weighting_mode = weighting_mode,
                           compute_mode= compute_mode, method = method, confidence= confidence,
-                          depth_of_tree= depth_of_parents, c_or_p = "parents")
+                          depth_of_tree= depth_of_parents, c_or_p = "parents", level=level)
         tmp = dic_p[display_name]
         tmp.pop("level")
         root_p = copy.deepcopy(dic_p[display_name])
@@ -171,6 +184,8 @@ def topics():
 
     root_res = defaultdict(OrderedDict)
     root_res["name"] = display_name
+    if level:
+        root_res["levels"] = topic2level[normalize_name_for_space_name(display_name)]
     len_chidren = 0
     len_parents = 0
     if has_children:
@@ -190,13 +205,13 @@ def topics():
     return jsonify(root_res)
 
 def main():
-    app.run(host="0.0.0.0", port=5098)
+    app.run(host="0.0.0.0", port=5097)
 
 if __name__ == '__main__':
     start_t = time.time()
     global cachePath
-    cachePath = "./.cache/"
-    #cachePath = "./.cache_debug/"
+    #cachePath = "./.cache/"
+    cachePath = "./.cache_debug/"
     main()
     end_t = time.time()
     t = end_t - start_t

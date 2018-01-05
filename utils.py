@@ -1,6 +1,6 @@
 from nltk.stem import WordNetLemmatizer
 lemmatize = WordNetLemmatizer().lemmatize
-from globalVar import taxonomy, mag, ccs, parent_taxonomy
+from globalVar import taxonomy, mag, ccs, parent_taxonomy, topic2level
 from collections import defaultdict, OrderedDict
 import os
 import copy
@@ -37,7 +37,7 @@ def normalize_name_for_space_name(name):
 
 def normalize_name_for_querying_vector_model(name):
     # e.g.: "machines_learning" --> "machine_learning"
-    tmp = name.split('_')
+    tmp = name.lower().split('_')
     for i in range(len(tmp)):
         tmp[i] = lemmatize(tmp[i])
     name = '_'.join(tmp)
@@ -149,7 +149,8 @@ def make_dir(path):
     except OSError:
         pass
 
-def get_level(cur_tax, root):
+def get_level(cur_tax, root, hasSubcats=False):
+    print("---------------------------------------------------")
     cur_level = 0
     cur_total = {root} #record the current total topic set
     A = {root} # current set
@@ -158,11 +159,15 @@ def get_level(cur_tax, root):
         record_results.append(A)
         B = set()
         for i in A:
-            B |= set(cur_tax[i])
+            if not hasSubcats:
+                B |= set(cur_tax[i])
+            else:
+                B |= set(cur_tax[i]["subcats"])
         B -= cur_total #except total set
         A = B.copy()
         cur_total |= B #cur_total U B
         print("Current total: {}, A: {}".format(len(cur_total), len(A)))
+    print("---------------------------------------------------")
     return record_results
 
 
@@ -177,7 +182,7 @@ def load_level_info(taxonomy, ccs, mag_fos_infile="data/fos_levelname.csv"):
 
     #mag level file:
     mag_res = []
-    if not os.path.exists(mag_fos_infile):
+    if os.path.exists(mag_fos_infile):
         with open(mag_fos_infile, "r") as f:
             tmp = f.readlines()
         for i in tmp:
@@ -193,14 +198,14 @@ def load_level_info(taxonomy, ccs, mag_fos_infile="data/fos_levelname.csv"):
             topic2level[topic]["c"] = index  #because _root is 0, we can consider root is level 0
     ############################################## wiki 与 ccs 不同，wiki有subcats和subpages等
 
-    record_tax = get_level(taxonomy, "scientific_discipline")
+    record_tax = get_level(taxonomy, "scientific_discipline", hasSubcats=True)
     for index, cur_set in enumerate(record_tax):
         for topic in cur_set:
             topic2level[topic]["w"] = index  #because _root is 0, we can consider root is level 0
 
     return topic2level
 
-
+topic2level = load_level_info(taxonomy, ccs, "data/fos_levelname.csv")
 
 
 
