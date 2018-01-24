@@ -2,7 +2,7 @@ from globalVar import w2v_model
 import logging
 import mlp
 import rnn
-from globalVar import rnn_model
+from globalVar import rnn_model, expert_filter
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO)
 
@@ -20,7 +20,7 @@ output: ranked_scores
 
 """
 
-def originMethod(candidateWeight, candidateSet, k, context):
+def originMethod(candidateWeight, candidateSet, k, context, isParent=False):
     candidateSet = [list(i) for i in candidateSet] # change set to list
 
     scores = {}
@@ -46,9 +46,19 @@ def originMethod(candidateWeight, candidateSet, k, context):
                 scores[c] = tmp_score
             else:
                 pass
+    """
     # special need , database's subarea includes xml
     if area == "database":
         scores["xml"] = 0.71
+    """
+    if not isParent:
+        #filter using expert annotation
+        if area in expert_filter:
+            tmp_sm = 0.99
+            for i in expert_filter[area]:
+                scores[i] = tmp_sm
+                tmp_sm -= 0.001
+
     ranked_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     #print(ranked_scores)
     ranked_scores = ranked_scores[:k]

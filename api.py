@@ -159,6 +159,9 @@ def topics():
             return jsonify(result)
 
     area_name = normalize_name_for_space_name(area_name)
+    #redirect "computer" --> "computer_science"
+    if area_name == "computer":
+        area_name = "computer_science"
     context = normalize_name_for_space_name(context)
     display_name = normalize_display_name(area_name)
     if has_children:
@@ -205,13 +208,13 @@ def topics():
     return jsonify(root_res)
 
 def main():
-    app.run(host="0.0.0.0", port=5097)
+    app.run(host="0.0.0.0", port=5098)
 
 if __name__ == '__main__':
     start_t = time.time()
     global cachePath
-    #cachePath = "./.cache/"
-    cachePath = "./.cache_debug/"
+    cachePath = "./.cache/"
+    #cachePath = "./.cache_debug/"
     main()
     end_t = time.time()
     t = end_t - start_t

@@ -63,10 +63,10 @@ class TopKSubAreas(object):
     def _originMethod(self, isParent = False):
         if not isParent:
             assert self.candidateWeight is not None #assure weight is not none
-            ranked_scores = originMethod(self.candidateWeight, self.candidateSet, self.k, self.context)
+            ranked_scores = originMethod(self.candidateWeight, self.candidateSet, self.k, self.context, isParent=False)
         else:
             #parent
-            ranked_scores = originMethod(self.candidateWeight, self.candidateParentSet, self.kp, self.context)
+            ranked_scores = originMethod(self.candidateWeight, self.candidateParentSet, self.kp, self.context, isParent=True)
         return ranked_scores
 
 

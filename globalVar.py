@@ -6,6 +6,7 @@ import os
 from keras.models import load_model
 import rnn
 from collections import defaultdict
+import json
 
 logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.INFO)
 
@@ -14,6 +15,13 @@ global parent_taxonomy
 global mlp_model
 global rnn_model
 global topic2level
+global expert_filter
+
+def load_json(json_file):
+    logging.info("loading json file from {}...".format(json_file))
+    with open(json_file, "r") as f:
+        data = json.load(f)
+    return data
 
 def load_vector_model(vector_model):
     logging.info('loading vector model from {}...'.format(vector_model))
@@ -126,6 +134,7 @@ mag = None
 mlp_model = None
 rnn_model = None
 topic2level = None
+expert_filter = None
 """
 taxonomy_infile = "/dev/shm/b/wiki_taxonomy_lemmatized.pkl" #pickle 2
 parent_taxonomy_infile = "data/parent_taxonomy.pkl"
@@ -140,6 +149,7 @@ vector_model_infile = "/dev/shm/a/wiki_text_20161201_1to4_200d.model"
 mag_infile = "/dev/shm/a/mag2.pkl"
 ccs_infile = "/dev/shm/a/acm_ccs.pkl"
 mlp_infile = "data/mlp_model.h5"
+expert_filter_infile = "data/expert_annotation.json"
 
 #mag_fos_infile = "data/fos_levelname.csv"
 
@@ -149,6 +159,8 @@ w2v_model = load_vector_model(vector_model_infile)
 mag = get_data_from_pickle(mag_infile)
 ccs = get_data_from_pickle(ccs_infile)
 parent_taxonomy = load_parent_taxonomy(parent_taxonomy_infile)
+
+expert_filter = load_json(expert_filter_infile)
 
 if os.path.exists(mlp_infile):
     mlp_model = load_model(mlp_infile)
